@@ -1,0 +1,175 @@
+[project]
+name = "qprogram-qdac"
+version = "0.1.0"
+description = "QDevil QDAC vendor extensions for the QProgram pulse-level quantum programming DSL."
+authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech"}]
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE"]
+requires-python = ">=3.11"
+keywords = [
+    "qilimanjaro",
+    "qdac",
+    "qdevil",
+    "quantum computing",
+    "quantum control",
+    "pulse programming",
+    "dsl",
+]
+urls = { "Homepage" = "https://github.com/qilimanjaro-tech/qprogram-qdac", "Documentation" = "https://qilimanjaro-tech.github.io/qprogram-qdac/", "Source" = "https://github.com/qilimanjaro-tech/qprogram-qdac", "Issues" = "https://github.com/qilimanjaro-tech/qprogram-qdac/issues" }
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Quantum Computing",
+    "Typing :: Typed",
+]
+dependencies = [
+    "qprogram>=0.1.0",
+]
+
+# Vendor-discovery entry point. A `.qp` file whose header carries `require qdac <x.y>` makes
+# `qprogram.loads(...)` look this group up and import the named module on demand, so the file
+# loads even when the caller never imported this package. The entry-point *name* is the vendor
+# namespace; the *value* is the module whose import side effects do the registration.
+[project.entry-points."qprogram.vendors"]
+qdac = "qprogram_qdac"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "pytest-mock>=3.15.1",
+    "ruff>=0.16.4",
+    "ty>=0.0.74",
+]
+docs = [
+    "mkdocstrings[python]>=1.0.6",
+    "zensical>=0.0.57",
+]
+
+# The core DSL is not on PyPI yet, so it resolves from a sibling checkout. The published wheel
+# carries the plain `qprogram>=0.1.0` requirement above; this table only steers local and CI
+# environments, and both keep `qilimanjaro-tech/qprogram` checked out next to this repository.
+[tool.uv.sources]
+qprogram = { path = "../qprogram", editable = true }
+
+[build-system]
+requires = ["hatchling>=1.32"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/qprogram_qdac"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/src",
+    "/tests",
+    "/docs",
+    "/zensical.toml",
+    "/README.md",
+    "/LICENSE",
+]
+
+# ----------------------------------------------------------------------------
+# Linting and formatting
+# ----------------------------------------------------------------------------
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+# Preview is on so the docstring (DOC) and copyright (CPY) rule families run:
+# they are what keep the public API documented and every file attributed.
+preview = true
+select = ["ALL"]
+ignore = [
+    # --- Deliberate design choices -----------------------------------------
+    "import-private-name",   # the vendor hooks live in qprogram's private modules by design
+    "non-empty-init-module",   # the package __init__ is where registration happens
+    # --- Documentation -----------------------------------------------------
+    "undocumented-public-init",   # constructor arguments are documented on the class docstring
+    "docstring-extraneous-exception",   # docstrings may document exceptions raised by helpers
+    # --- Noise -------------------------------------------------------------
+    "missing-trailing-comma",   # conflicts with the formatter
+    "line-too-long",   # the formatter owns line length
+    "boolean-type-hint-positional-argument",   # boolean positional arguments are part of the public API
+    "boolean-default-value-positional-argument",
+    "no-self-use",   # methods that ignore `self` are still part of the interface
+    # --- Complexity metrics ------------------------------------------------
+    "too-many-positional-arguments",
+    "magic-value-comparison",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "ANN",
+    "D",
+    "DOC",
+    "assert-false",
+    "blind-except",
+    "implicit-namespace-package",
+    "os-path-join",
+    "private-member-access",
+    "pytest-raises-too-broad",
+    "print",
+    "S",
+    "too-many-statements",
+]
+
+[tool.ruff.lint.flake8-annotations]
+allow-star-arg-any = true
+suppress-dummy-args = true
+
+[tool.ruff.lint.flake8-copyright]
+author = "Qilimanjaro Quantum Tech"
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"
+
+[tool.ruff.format]
+docstring-code-format = true
+docstring-code-line-length = "dynamic"
+
+# ----------------------------------------------------------------------------
+# Type checking
+# ----------------------------------------------------------------------------
+[tool.ty.src]
+include = ["src"]
+
+# ----------------------------------------------------------------------------
+# Testing
+# ----------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "9.0"
+addopts = ["-ra", "--strict-markers", "--strict-config"]
+testpaths = ["tests"]
+filterwarnings = ["error"]
+xfail_strict = true
+
+[tool.coverage.run]
+source = ["qprogram_qdac"]
+branch = true
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "@(abc\\.)?abstractmethod",
+    "pragma: no cover",
+    "raise NotImplementedError",
+    "\\.\\.\\.",
+]
+show_missing = true
+skip_covered = false
+precision = 1

@@ -1,0 +1,64 @@
+name: Feature Request
+description: Suggest a new operation or enhancement for qprogram-qdac
+title: "[Feature]: "
+type: Feature
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Keep it short. A one-line title like `Add qdac.<operation>` plus a code example of the API you want is enough.
+
+        An operation that is not specific to QDAC hardware belongs in [qprogram](https://github.com/qilimanjaro-tech/qprogram/issues) instead, so every backend gets it. This repository is for things only a QDAC can do.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feature Summary
+      description: What to add, in a sentence or two.
+      placeholder: One or two sentences describing the feature.
+    validations:
+      required: true
+
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation / Use Case
+      description: What you cannot do today, and why the workaround is not good enough.
+      placeholder: I'm trying to do X, but currently I have to work around it by...
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed Solution
+      description: |
+        The API you want, as a code example. Add a note about any design decision the implementer has to settle.
+      placeholder: |
+        ```python
+        import qprogram as qp
+        import qprogram_qdac
+
+        program = qp.QProgram()
+        program.qdac.set_offset("flux_q0", 0.42)
+        ```
+    validations:
+      required: false
+
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Hardware Behavior
+      description: |
+        What the QDAC channel actually does, and which underlying parameter or instruction the operation lowers to. Name the units the hardware expects if they differ from the DSL's.
+    validations:
+      required: false
+
+  - type: textarea
+    id: surface
+    attributes:
+      label: Surfaces It Touches
+      description: |
+        Anything you already know this reaches beyond the namespace method: a new capability token, a profile predicate, a limit, the `.qp` wire form. Leave blank if unsure.
+    validations:
+      required: false
