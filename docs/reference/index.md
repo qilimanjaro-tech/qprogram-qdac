@@ -9,8 +9,10 @@ from the docstrings in the source.
 
 Everything this package builds on is documented with the core DSL: the
 [`.qp` file format](https://qilimanjaro-tech.github.io/qprogram/reference/qp-format.html),
-the [reserved keywords](https://qilimanjaro-tech.github.io/qprogram/reference/reserved.html),
-the [exception hierarchy](https://qilimanjaro-tech.github.io/qprogram/reference/errors.html),
+the
+[reserved keywords](https://qilimanjaro-tech.github.io/qprogram/reference/reserved.html),
+the
+[exception hierarchy](https://qilimanjaro-tech.github.io/qprogram/reference/errors.html),
 and the
 [`qprogram` API](https://qilimanjaro-tech.github.io/qprogram/reference/api-qprogram.html).
 
