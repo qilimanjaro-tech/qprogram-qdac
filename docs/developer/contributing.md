@@ -15,8 +15,8 @@ Skim two things first.
    the template this package follows, and
    [capability protocol internals](https://qilimanjaro-tech.github.io/qprogram/developer/capability-protocol.html),
    the normative account of tokens, slots and predicates. The AST, the
-   validator, and the `.qp` format live there too. A change to this package
-   that needs a core change is usually a core issue instead.
+   validator, and the `.qp` format live there too. A change to this package that
+   needs a core change is usually a core issue instead.
 
 Then decide which repository the change belongs in. An operation only a QDAC can
 do belongs here. Anything a second backend would also want belongs in the core,

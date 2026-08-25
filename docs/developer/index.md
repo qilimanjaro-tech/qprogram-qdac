@@ -12,9 +12,9 @@ The [User guide](../guide/index.md) covers the same operations from the caller's
 side, and the [API reference](../reference/api.md) is generated from the
 docstrings under `src/`, so the code and the reference move together.
 
-This package is only the QDAC half. The AST, the `.qp` format, the
-capability protocol, and the reference executor all live in the core DSL.
-Two of its developer pages are the background for everything here:
+This package is only the QDAC half. The AST, the `.qp` format, the capability
+protocol, and the reference executor all live in the core DSL. Two of its
+developer pages are the background for everything here:
 [building a vendor extension](https://qilimanjaro-tech.github.io/qprogram/developer/vendor-extensions.html)
 is the template this package follows, and
 [capability protocol internals](https://qilimanjaro-tech.github.io/qprogram/developer/capability-protocol.html)

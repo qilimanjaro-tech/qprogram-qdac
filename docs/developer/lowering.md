@@ -149,9 +149,9 @@ Four things the DSL deliberately does not do:
   platform's job.
 - **No granularity or floor checks.** `dwell` and `delay` are nanosecond
   integers, never rounded to the engine's clock granularity and never checked
-  against the profile's `min_dwell_ns` (see [Limits](#limits-are-declared-not-enforced)).
-  `repetitions` is not checked against the engine's memory depth or against any
-  total-duration budget.
+  against the profile's `min_dwell_ns` (see
+  [Limits](#limits-are-declared-not-enforced)). `repetitions` is not checked
+  against the engine's memory depth or against any total-duration budget.
 - **The waveform's channel kind is not enforced at build time.** `Play`
   always reports `waveform.single` alongside the per-class token, so the token
   set alone does not prove the envelope is real-valued. An IQ waveform reaches
@@ -674,6 +674,7 @@ Serialization comes for free. The default serializer reflects on `__init__` to
 emit positional arguments in order and keyword arguments only when they differ
 from their default, and the parser drives itself from the same signature:
 
+<!-- check: skip -->
 ```
 #!QProgram 1.0
 
