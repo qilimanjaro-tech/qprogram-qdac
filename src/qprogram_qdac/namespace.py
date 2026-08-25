@@ -11,12 +11,12 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-"""The typed :class:`~qprogram.VendorNamespace` for QDAC operations.
+"""The typed [`VendorNamespace`][qprogram.VendorNamespace] for QDAC operations.
 
-Every method on :class:`QdacNamespace` constructs one
-:class:`~qprogram.operations.Operation` subclass and appends it to the program's active block.
+Every method on [`QdacNamespace`][qprogram_qdac.QdacNamespace] constructs one
+[`Operation`][qprogram.operations.Operation] subclass and appends it to the program's active block.
 The typed signatures are the discoverable surface: the dynamic ``__getattr__`` on
-:class:`~qprogram.QProgram` dispatches the same calls, but says nothing about their arguments.
+[`QProgram`][qprogram.QProgram] dispatches the same calls, but says nothing about their arguments.
 """
 
 from __future__ import annotations
@@ -43,20 +43,20 @@ if TYPE_CHECKING:
 class QdacNamespace(VendorNamespace):
     """The QDAC vendor namespace, reached as ``program.qdac.<operation>()``.
 
-    Available on every :class:`~qprogram.QProgram` instance once :mod:`qprogram_qdac` is imported.
+    Available on every [`QProgram`][qprogram.QProgram] instance once `qprogram_qdac` is imported.
     Each method type-checks its arguments through the signature, builds the matching operation, and
     appends it to whichever block the program has open.
     """
 
     def wait_trigger(self, bus: str, port: int) -> None:
-        """Append a :class:`~qprogram_qdac.operations.WaitTrigger` operation.
+        """Append a [`WaitTrigger`][qprogram_qdac.WaitTrigger] operation.
 
         Args:
             bus (str): QDAC channel whose trigger input the sequencer listens on.
             port (int): Trigger input port number on the chassis.
 
         Raises:
-            ValidationError: If ``bus`` is a :class:`~qprogram.BusRef` from another schema than the
+            ValidationError: If ``bus`` is a [`BusRef`][qprogram.BusRef] from another schema than the
                 one attached to the program.
         """
         self._append(WaitTrigger(bus=bus, port=port))
@@ -68,7 +68,7 @@ class QdacNamespace(VendorNamespace):
         position: TriggerPosition = "start",
         outputs: Iterable[int] = (),
     ) -> None:
-        """Append a :class:`~qprogram_qdac.operations.SetTrigger` operation.
+        """Append a [`SetTrigger`][qprogram_qdac.SetTrigger] operation.
 
         Args:
             bus (str): QDAC channel whose trigger outputs are being configured.
@@ -80,21 +80,21 @@ class QdacNamespace(VendorNamespace):
                 ``qdac.empty-trigger-outputs`` predicate rejects at validation time.
 
         Raises:
-            ValidationError: If ``bus`` is a :class:`~qprogram.BusRef` from another schema than the
+            ValidationError: If ``bus`` is a [`BusRef`][qprogram.BusRef] from another schema than the
                 one attached to the program.
         """
         self._append(SetTrigger(bus=bus, duration=duration, position=position, outputs=outputs))
 
     def set_offset(self, bus: str, offset: float | Expression) -> None:
-        """Append a :class:`~qprogram_qdac.operations.SetOffset` operation.
+        """Append a [`SetOffset`][qprogram_qdac.SetOffset] operation.
 
         Args:
             bus (str): QDAC channel whose DC offset is being set.
             offset (float | Expression): Target offset in volts. Accepts a literal or any
-                :class:`~qprogram.Expression`, a loop-bound :class:`~qprogram.Variable` included.
+                [`Expression`][qprogram.Expression], a loop-bound [`Variable`][qprogram.Variable] included.
 
         Raises:
-            ValidationError: If ``bus`` is a :class:`~qprogram.BusRef` from another schema than the
+            ValidationError: If ``bus`` is a [`BusRef`][qprogram.BusRef] from another schema than the
                 one attached to the program.
         """
         self._append(SetOffset(bus=bus, offset=offset))
@@ -108,13 +108,13 @@ class QdacNamespace(VendorNamespace):
         repetitions: int = 1,
         stepped: bool = False,
     ) -> None:
-        """Append a :class:`~qprogram_qdac.operations.Play` operation.
+        """Append a [`Play`][qprogram_qdac.Play] operation.
 
         Args:
             bus (str): QDAC channel that emits the waveform.
-            waveform (Waveform): Single-channel :class:`~qprogram.waveforms.Waveform` to emit. A
+            waveform (Waveform): Single-channel [`Waveform`][qprogram.waveforms.Waveform] to emit. A
                 ``str`` alias is accepted here too, to be resolved later by
-                :meth:`~qprogram.QProgram.with_waveforms`.
+                [`with_waveforms`][qprogram.QProgram.with_waveforms].
             dwell (int): Per-sample dwell time in nanoseconds. Default ``1``.
             delay (int): Delay before the first sample, in nanoseconds. Default ``0``.
             repetitions (int): How many times the envelope is emitted. Default ``1``.
@@ -122,7 +122,7 @@ class QdacNamespace(VendorNamespace):
                 interpolated output. Default ``False``.
 
         Raises:
-            ValidationError: If ``bus`` is a :class:`~qprogram.BusRef` from another schema than the
+            ValidationError: If ``bus`` is a [`BusRef`][qprogram.BusRef] from another schema than the
                 one attached to the program.
         """
         self._append(

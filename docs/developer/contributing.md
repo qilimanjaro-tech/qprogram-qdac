@@ -141,6 +141,18 @@ are configured in `pyproject.toml`.
   `merge_init_into_class` is on and `undocumented-public-init` is ignored.
   `Attributes:` is for a value object whose fields are the interface and are not
   all constructor arguments.
+- **Cross-references are Markdown, not Sphinx roles.** Write
+  `` [`SetOffset`][qprogram_qdac.SetOffset] `` for a target this site documents, and
+  `` [`Expression`][qprogram.Expression] `` for one the core DSL documents:
+  `zensical.toml` loads that project's published `objects.inv` as an
+  `inventories` entry, so a core type resolves to its page on that site. Plain
+  `` `Expression` `` is for anything neither site renders, such as a builtin or
+  a stdlib name. A Sphinx role such as `` :class:`~qprogram.Expression` ``
+  would reach the page as literal text, since mkdocstrings reads a docstring as
+  Markdown and has no reStructuredText reader;
+  `tests/test_docstring_style.py` fails the suite on one. The docs build runs
+  with `--strict`, so a cross-reference neither site can resolve fails CI as
+  well.
 - **Every file carries the Apache header**, the standard 13-line notice with
   `Copyright 2026 Qilimanjaro Quantum Tech`, above the module docstring. Ruff's
   `missing-copyright-notice` rule fails the lint on a file without it. Tests

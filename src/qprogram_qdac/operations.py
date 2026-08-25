@@ -13,7 +13,7 @@
 # limitations under the License.
 """The QDAC operations, as AST nodes.
 
-Each class is a concrete :class:`~qprogram.operations.Operation` subclass that a program holds in
+Each class is a concrete [`Operation`][qprogram.operations.Operation] subclass that a program holds in
 its AST. They are typed attributes plus the capability tokens those attributes require.
 
 QDAC is a slow high-precision DAC, most often used for flux biasing on transmon platforms. Its
@@ -141,9 +141,9 @@ class SetOffset(Operation):
     Args:
         bus (str): QDAC channel whose DC offset is being set.
         offset (float | Expression): Target offset in volts. Accepts a literal or any
-            :class:`~qprogram.Expression`, a loop-bound :class:`~qprogram.Variable` included. A
+            [`Expression`][qprogram.Expression], a loop-bound [`Variable`][qprogram.Variable] included. A
             swept offset is re-uploaded once per iteration, which is what the
-            :mod:`qprogram_qdac.profiles` constraint on the enclosing loop expresses.
+            `qprogram_qdac.profiles` constraint on the enclosing loop expresses.
     """
 
     def __init__(self, bus: str, offset: float | Expression) -> None:
@@ -166,9 +166,9 @@ class Play(Operation):
 
     Args:
         bus (str): QDAC channel that emits the waveform.
-        waveform (Waveform): Single-channel :class:`~qprogram.waveforms.Waveform` whose envelope is
+        waveform (Waveform): Single-channel [`Waveform`][qprogram.waveforms.Waveform] whose envelope is
             uploaded to the waveform engine. A ``str`` alias is accepted here too, to be resolved
-            later by :meth:`~qprogram.QProgram.with_waveforms`.
+            later by [`with_waveforms`][qprogram.QProgram.with_waveforms].
         dwell (int): Per-sample dwell time in nanoseconds, which sets the emission rate. Default
             ``1``.
         delay (int): Delay in nanoseconds between sequence start and the first sample. Default
@@ -201,8 +201,8 @@ class Play(Operation):
         """Return ``vendor.qdac.play`` plus the tokens describing the waveform.
 
         ``waveform.single`` is always required, since the engine drives one channel. A registered
-        waveform class contributes its per-class token from :func:`qprogram.protocol.waveform_token`
-        on top, ``waveform.ramp`` for a :class:`~qprogram.waveforms.Ramp` for instance.
+        waveform class contributes its per-class token from [`qprogram.protocol.waveform_token`][]
+        on top, ``waveform.ramp`` for a [`Ramp`][qprogram.waveforms.Ramp] for instance.
         """
         from qprogram.protocol import waveform_token  # ruff: ignore[import-outside-top-level]
 

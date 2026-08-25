@@ -14,8 +14,8 @@
 """The typed mixin that spells ``.qdac`` out on a QProgram subclass.
 
 The mixin exists for editor support and nothing else. At runtime the base
-:class:`~qprogram.QProgram`'s dynamic ``__getattr__`` already routes ``program.qdac.*`` to the
-registered :class:`~qprogram_qdac.namespace.QdacNamespace`. Type checkers and editors cannot see
+[`QProgram`][qprogram.QProgram]'s dynamic ``__getattr__`` already routes ``program.qdac.*`` to the
+registered [`QdacNamespace`][qprogram_qdac.QdacNamespace]. Type checkers and editors cannot see
 that dispatch, so the mixin declares the namespace as a typed ``@property``.
 
 Usage, one vendor::
@@ -49,16 +49,16 @@ if TYPE_CHECKING:
 class QdacMixin:
     """Mixin that adds a typed ``.qdac`` property to a QProgram subclass.
 
-    Combine it with :class:`qprogram.QProgram` through multiple inheritance, listing one mixin per
-    vendor. :class:`qprogram_qdac.QProgram` is that combination already made.
+    Combine it with [`qprogram.QProgram`][] through multiple inheritance, listing one mixin per
+    vendor. [`qprogram_qdac.QProgram`][] is that combination already made.
     """
 
     @property
     def qdac(self: _BaseQProgram) -> QdacNamespace:  # type: ignore[misc]
         """This program's typed QDAC namespace.
 
-        The first access builds a :class:`QdacNamespace` bound to the program and stores it on the
-        instance, so every later access hands back the same object.
+        The first access builds a [`QdacNamespace`][qprogram_qdac.QdacNamespace] bound to the program and stores it on
+        the instance, so every later access hands back the same object.
         """
         # Reading and writing the cache through ``object`` keeps it clear of any attribute hooks
         # a QProgram subclass installs, and of the vendor lookup in ``QProgram.__getattr__``.

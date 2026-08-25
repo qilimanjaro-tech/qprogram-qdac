@@ -122,6 +122,9 @@ default_handler = "python"
 
 [project.plugins.mkdocstrings.handlers.python]
 paths = ["src"]
+# The core DSL's published inventory, so a cross-reference to a core type resolves to its
+# page on that site rather than rendering as a dead link.
+inventories = ["https://qilimanjaro-tech.github.io/qprogram/objects.inv"]
 
 [project.plugins.mkdocstrings.handlers.python.options]
 docstring_style = "google"

@@ -16,24 +16,25 @@
 This package provides three things:
 
 1. **Runtime registration.** Importing the package is the activation step. It registers the ``qdac``
-   vendor namespace on :class:`~qprogram.QProgram`, every QDAC operation with the ``.qp``
+   vendor namespace on [`QProgram`][qprogram.QProgram], every QDAC operation with the ``.qp``
    serializer, and the ``qdac-default-v1`` capability profile.
-2. **Typed mixin.** :class:`QdacMixin` declares a typed ``.qdac`` property for editor autocomplete.
-3. **Pre-combined builder.** :class:`QProgram` here is :class:`qprogram.QProgram` with that mixin
+2. **Typed mixin.** [`QdacMixin`][qprogram_qdac.QdacMixin] declares a typed ``.qdac`` property for editor autocomplete.
+3. **Pre-combined builder.** [`QProgram`][qprogram_qdac.QProgram] here is [`qprogram.QProgram`][] with that mixin
    already applied.
 
 A ``.qp`` file whose header says ``require qdac 0.1`` activates the package on load even when the
-caller never imported it. :func:`qprogram.loads` looks the vendor up in the ``qprogram.vendors``
+caller never imported it. `qprogram.loads` looks the vendor up in the ``qprogram.vendors``
 entry-point group declared in ``pyproject.toml`` and imports this module for its side effects.
 
 QDAC is a slow high-precision DAC, most often used for flux biasing on transmon platforms. The
 operations it contributes are:
 
-- :meth:`QdacNamespace.play`, which uploads an envelope to one channel's waveform engine;
-- :meth:`QdacNamespace.set_trigger` and :meth:`QdacNamespace.wait_trigger`, the trigger-network
-  plumbing that lines a QDAC sequence up with another instrument;
-- :meth:`QdacNamespace.set_offset`, a DC offset whose swept form lifts the enclosing loop to
-  host-side dispatch.
+- [`QdacNamespace.play`][qprogram_qdac.QdacNamespace.play], which uploads an envelope to one channel's waveform engine;
+- [`QdacNamespace.set_trigger`][qprogram_qdac.QdacNamespace.set_trigger] and
+  [`QdacNamespace.wait_trigger`][qprogram_qdac.QdacNamespace.wait_trigger], the trigger-network plumbing that lines a
+  QDAC sequence up with another instrument;
+- [`QdacNamespace.set_offset`][qprogram_qdac.QdacNamespace.set_offset], a DC offset whose swept form lifts the enclosing
+  loop to host-side dispatch.
 
 Usage, with the pre-combined builder::
 
@@ -121,9 +122,9 @@ _register_qdac_profile()
 
 
 class QProgram(QdacMixin, _BaseQProgram):
-    """:class:`~qprogram.QProgram` pre-combined with :class:`QdacMixin`.
+    """[`QProgram`][qprogram.QProgram] pre-combined with [`QdacMixin`][qprogram_qdac.QdacMixin].
 
-    Behaves exactly like :class:`qprogram.QProgram`, with editor autocomplete for ``qp.qdac.*``.
+    Behaves exactly like [`qprogram.QProgram`][], with editor autocomplete for ``qp.qdac.*``.
     """
 
 
