@@ -22,27 +22,6 @@ Then decide which repository the change belongs in. An operation only a QDAC can
 do belongs here. Anything a second backend would also want belongs in the core,
 so every backend gets it.
 
-## The core DSL is a sibling checkout
-
-`[tool.uv.sources]` points `qprogram` at `../qprogram`, so the core DSL has to
-sit next to this repository:
-
-```bash
-git clone https://github.com/qilimanjaro-tech/qprogram
-git clone https://github.com/qilimanjaro-tech/qprogram-qdac
-cd qprogram-qdac
-```
-
-```
-parent/
-├── qprogram/          # the core DSL, editable
-└── qprogram-qdac/     # this repository
-```
-
-The published wheel declares a plain `qprogram>=0.1.0` dependency. The
-`[tool.uv.sources]` table only steers local and CI resolution, and CI checks the
-core out as a sibling the same way, so an installing user always resolves the
-core from the index.
 
 ## Development workflow
 
@@ -89,13 +68,26 @@ core from the index.
    [`docs/reference/api.md`](../reference/api.md), whose `members:` lists are
    explicit.
 
-8. **Open the pull request.** The workflows under `.github/workflows/` run on
-   it. `tests.yml` runs the suite on Python 3.11 and 3.14 for a pull request,
-   across 3.11 through 3.14 on a push to `main`, and uploads coverage from the
-   3.13 job. `code_quality.yml` runs `ruff check` and `ruff format --diff` once
-   on 3.13, then `ty check` once per supported version. `docs.yml` builds this
-   site, and deploys it on a push to `main`. Each of the three checks the core DSL
-   out as a sibling directory first.
+8. **Add a changelog entry.** Anything a caller would notice gets one news
+   fragment under `changelog/`, named `<pr-number>.<type>.md`, where the type
+   is `added`, `changed`, `fixed`, or `removed`.
+
+   ```bash
+   uv run towncrier create 123.added.md
+   ```
+
+   Write one or two sentences about what changed for somebody using the
+   package. A fragment written before the pull request has a number takes a `+`
+   prefix and any name, as in `+trigger-network-reset.added.md`; rename it once
+   the number exists so the entry carries a link. Internal refactors, test-only
+   changes, and docs corrections do not need one.
+
+9. **Open the pull request.** The workflows under `.github/workflows/` run on
+    it. `tests.yml` runs the suite on Python 3.11 and 3.14 for a pull request,
+    across 3.11 through 3.14 on a push to `main`, and uploads coverage from the
+    3.13 job. `code_quality.yml` runs `ruff check` and `ruff format --diff` once
+    on 3.13, then `ty check` once per supported version. `docs.yml` builds this
+    site, and deploys it on a push to `main`.
 
 ## What "small PR" means
 
@@ -180,6 +172,49 @@ are configured in `pyproject.toml`.
 | Registration or the typed program   | `src/qprogram_qdac/__init__.py`.                                     |
 | Docs                                | `docs/`; the nav lives in `zensical.toml`.                            |
 | Anything about the AST or `.qp`     | The core DSL, not here.                                               |
+
+## Releasing
+
+`CHANGELOG.md` is assembled from the fragments in `changelog/`, so it is written
+once per release rather than edited per PR. A release goes out from its own pull
+request:
+
+1. Branch from an up-to-date `main`.
+2. Set the new version. This writes both `pyproject.toml` and `uv.lock`; nothing
+   else holds the literal, since the version is read from the installed
+   metadata.
+
+   ```bash
+   uv version 0.2.0
+   uv sync
+   ```
+
+3. Assemble the changelog. Pass the version explicitly. Left to guess, towncrier
+   reads the *installed* metadata and can render a stale number into a heading
+   that is never regenerated.
+
+   ```bash
+   uv run towncrier build --draft --version "$(uv version --short)"   # preview
+   uv run towncrier build --version "$(uv version --short)" --yes
+   ```
+
+4. Read the rendered section and edit it. Fragments are written weeks apart by
+   different people and rarely read as one voice when they land together.
+5. Open the release PR, and merge it once CI is green.
+6. Create the GitHub Release on the merge commit, tagged with the version now in
+   `pyproject.toml` and no `v` prefix. Publishing it starts `publish.yml`, which
+   runs `uv build` for the wheel and the sdist, checks both with `twine check`,
+   and uploads them through trusted publishing. Pre-releases publish too.
+7. Approve the deployment. The run waits on the `pypi` environment until a
+   reviewer releases it. PyPI never lets a file be replaced, so this approval is
+   the last point at which a wrong version can be stopped.
+
+`publish.yml` can also be started by hand from the Actions tab, which is how the
+first release goes out and how a run that failed on a transient error is
+retried. A manual run takes three inputs: `platform` chooses between PyPI and
+the `qilimanjaro` AWS CodeArtifact domain, `repository` names the CodeArtifact
+repository, and `dry_run` builds and validates the distributions without
+uploading them.
 
 ## Commit messages
 

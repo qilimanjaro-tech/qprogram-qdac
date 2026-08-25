@@ -16,21 +16,12 @@ concurrency:
   group: docs-${{ github.head_ref || github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
-env:
-  # The core DSL is not published yet, so every job checks it out as a sibling directory and
-  # `[tool.uv.sources]` resolves `../qprogram` against it.
-  CORE_REPO: qilimanjaro-tech/qprogram
-
 jobs:
   build:
     name: Build
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 10
-
-    defaults:
-      run:
-        working-directory: qprogram-qdac
 
     permissions:
       contents: read
@@ -39,14 +30,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 1
-          path: qprogram-qdac
-
-      - name: Check out the core DSL as a sibling
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          repository: ${{ env.CORE_REPO }}
-          fetch-depth: 1
-          path: qprogram
 
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
@@ -73,7 +56,7 @@ jobs:
       - name: Upload the site
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b  # v4.0.0
         with:
-          path: qprogram-qdac/site
+          path: site
 
   deploy:
     name: Deploy

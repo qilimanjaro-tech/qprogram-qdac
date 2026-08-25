@@ -98,17 +98,9 @@ profile, and the generated API reference, lives at
 
 ## Development
 
-The project uses [uv](https://docs.astral.sh/uv/). `[tool.uv.sources]` in
-`pyproject.toml` resolves `qprogram` from a sibling checkout at
-`../qprogram`, so clone
-[qilimanjaro-tech/qprogram](https://github.com/qilimanjaro-tech/qprogram)
-next to this repository first. `uv sync` fails in a checkout of this
-repository alone, because the path dependency has nowhere to resolve to.
-CI does the same thing, checking out the core repository as a sibling
-before installing.
+The project uses [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/qilimanjaro-tech/qprogram
 git clone https://github.com/qilimanjaro-tech/qprogram-qdac
 cd qprogram-qdac
 

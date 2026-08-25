@@ -18,9 +18,6 @@ concurrency:
 env:
   # The version that carries coverage.
   COVERAGE_PYTHON: "3.13"
-  # The core DSL is not published yet, so every job checks it out as a sibling directory and
-  # `[tool.uv.sources]` resolves `../qprogram` against it.
-  CORE_REPO: qilimanjaro-tech/qprogram
 
 jobs:
   tests:
@@ -28,10 +25,6 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 15
-
-    defaults:
-      run:
-        working-directory: qprogram-qdac
 
     permissions:
       contents: read
@@ -48,14 +41,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 1
-          path: qprogram-qdac
-
-      - name: Check out the core DSL as a sibling
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          repository: ${{ env.CORE_REPO }}
-          fetch-depth: 1
-          path: qprogram
 
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
@@ -84,7 +69,7 @@ jobs:
         if: matrix.python-version == env.COVERAGE_PYTHON
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f  # v7.0.0
         with:
-          files: qprogram-qdac/coverage.xml
+          files: coverage.xml
           disable_search: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
@@ -92,7 +77,7 @@ jobs:
         if: ${{ !cancelled() && matrix.python-version == env.COVERAGE_PYTHON }}
         uses: codecov/test-results-action@0fa95f0e1eeaafde2c782583b36b28ad0d8c77d3  # v1.2.1
         with:
-          files: qprogram-qdac/junit.xml
+          files: junit.xml
           token: ${{ secrets.CODECOV_TOKEN }}
 
   all-tests:
