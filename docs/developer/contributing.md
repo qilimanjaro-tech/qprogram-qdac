@@ -22,27 +22,6 @@ Then decide which repository the change belongs in. An operation only a QDAC can
 do belongs here. Anything a second backend would also want belongs in the core,
 so every backend gets it.
 
-## The core DSL is a sibling checkout
-
-`[tool.uv.sources]` points `qprogram` at `../qprogram`, so the core DSL has to
-sit next to this repository:
-
-```bash
-git clone https://github.com/qilimanjaro-tech/qprogram
-git clone https://github.com/qilimanjaro-tech/qprogram-qdac
-cd qprogram-qdac
-```
-
-```
-parent/
-├── qprogram/          # the core DSL, editable
-└── qprogram-qdac/     # this repository
-```
-
-The published wheel declares a plain `qprogram>=0.1.0` dependency. The
-`[tool.uv.sources]` table only steers local and CI resolution, and CI checks the
-core out as a sibling the same way, so an installing user always resolves the
-core from the index.
 
 ## Development workflow
 
@@ -108,8 +87,7 @@ core from the index.
     across 3.11 through 3.14 on a push to `main`, and uploads coverage from the
     3.13 job. `code_quality.yml` runs `ruff check` and `ruff format --diff` once
     on 3.13, then `ty check` once per supported version. `docs.yml` builds this
-    site, and deploys it on a push to `main`. Each of the three checks the core DSL
-    out as a sibling directory first.
+    site, and deploys it on a push to `main`.
 
 ## What "small PR" means
 
@@ -237,11 +215,6 @@ retried. A manual run takes three inputs: `platform` chooses between PyPI and
 the `qilimanjaro` AWS CodeArtifact domain, `repository` names the CodeArtifact
 repository, and `dry_run` builds and validates the distributions without
 uploading them.
-
-Publishing does not need the core DSL as a sibling checkout, unlike the other
-three workflows. `uv build` reads `pyproject.toml` and never resolves runtime
-dependencies, so the wheel carries the plain `qprogram>=0.1.0` requirement and
-builds from this repository alone.
 
 ## Commit messages
 

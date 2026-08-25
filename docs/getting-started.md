@@ -14,15 +14,9 @@ That pulls in `qprogram`, the only dependency. There are no extras.
 
 ### Working on this package
 
-The repository uses [uv](https://docs.astral.sh/uv/). `[tool.uv.sources]`
-in `pyproject.toml` resolves `qprogram` from a sibling checkout at
-`../qprogram`, so clone both repositories side by side. `uv sync` fails in
-a checkout of this repository alone, because the path dependency has
-nowhere to resolve to. CI does the same thing: it checks out
-`qilimanjaro-tech/qprogram` next to this repository before installing.
+The repository uses [uv](https://docs.astral.sh/uv/).
 
 ```bash
-git clone https://github.com/qilimanjaro-tech/qprogram
 git clone https://github.com/qilimanjaro-tech/qprogram-qdac
 cd qprogram-qdac
 

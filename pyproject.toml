@@ -60,12 +60,6 @@ docs = [
     "zensical>=0.0.57",
 ]
 
-# The core DSL is not on PyPI yet, so it resolves from a sibling checkout. The published wheel
-# carries the plain `qprogram>=0.1.0` requirement above; this table only steers local and CI
-# environments, and both keep `qilimanjaro-tech/qprogram` checked out next to this repository.
-[tool.uv.sources]
-qprogram = { path = "../qprogram", editable = true }
-
 [build-system]
 requires = ["hatchling>=1.32"]
 build-backend = "hatchling.build"
