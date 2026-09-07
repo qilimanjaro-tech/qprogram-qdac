@@ -685,8 +685,12 @@ body:
 ```
 
 Adding an operation is a minor version bump of the vendor protocol. Older files
-keep loading, because the parser accepts a file whose minor is not newer than
-the installed extension's.
+keep loading, because the parser accepts any `require` line the installed
+extension can satisfy, and an older file never mentions the operation that was
+added. Changing an existing operation's wire form is the case that needs work:
+register a rewrite for it under the version that ships the change, with
+`qp.register_vendor_migration("qdac", "<major>.<minor>")`, and the files users
+already have go on loading.
 
 ### The tests that come with it
 

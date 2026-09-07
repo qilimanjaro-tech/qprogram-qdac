@@ -89,8 +89,9 @@ demand if the reader never did.
 ## Status
 
 The vendor protocol version is this package's own version, and `.qp` files
-carry it as `require qdac <major>.<minor>`. A file loads against any
-installed `qprogram-qdac` that shares its major version and is no older in
-minor. Anything else is a `ParseError` rather than a partial load. The
-Python API is pre-1.0 and allowed to move; the wire form is the steadier
-of the two.
+carry it as `require qdac <major>.<minor>`. A file loads against any installed
+`qprogram-qdac` at that version or above: when a release changes an operation's
+wire form it registers a migration for it, and the older spelling is rewritten
+on the way in. A file asking for more than the installed package provides is a
+`ParseError` rather than a partial load. The Python API is pre-1.0 and allowed
+to move; the wire form is the steadier of the two.

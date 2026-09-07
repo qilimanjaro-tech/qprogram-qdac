@@ -110,7 +110,9 @@ carries four kinds of change:
 
 Adding an operation is a minor version bump of the package, which is also the
 vendor protocol version in the `require qdac <major>.<minor>` header. Removing
-or renaming one, or changing what it means on the wire, is a major bump.
+or renaming one, or changing what it means on the wire, is a major bump — and it
+needs a migration registered with `qp.register_vendor_migration("qdac", ...)`
+under the version that ships it, so the files users already have keep loading.
 
 ## Style notes
 
