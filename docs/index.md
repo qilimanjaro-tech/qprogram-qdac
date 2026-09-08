@@ -50,7 +50,7 @@ print(qp.dumps(program))
 That prints the program as `.qp` text:
 
 ```
-#!QProgram 1.0
+#!QProgram 0.2
 
 require qdac 0.1
 

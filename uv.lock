@@ -785,16 +785,16 @@ wheels = [
 
 [[package]]
 name = "qprogram"
-version = "0.1.0"
+version = "0.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
     { name = "numpy", version = "2.5.2", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "xarray" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6a/05/95940bb40c18f3d6c5dc39360ae4938991cff2a6fa0eeac5c74f8007528d/qprogram-0.1.0.tar.gz", hash = "sha256:c91c1ccee667d3519f54756319f869979dd57b0e911ce811904ec03eb3bceaae", size = 405666, upload-time = "2026-08-25T21:06:54.882Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/03/f8/04bb68c0e39dbdea6dfab59d89cf1f9ca653f1887a58aa835b6b3b3aa89d/qprogram-0.2.0.tar.gz", hash = "sha256:461209b290639c1ca14c1ea92b798aeb034e7045e2d5966f1f8d61f9a10d3020", size = 1882951, upload-time = "2026-09-08T11:10:18.141Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0d/23/4f97d6602da280da3652acac945ec961928e227a8ae8f80a1d4487260384/qprogram-0.1.0-py3-none-any.whl", hash = "sha256:a59fcb279394146696ea2287671edd09004e56027881745bca055d31b0b34d3b", size = 272860, upload-time = "2026-08-25T21:06:53.716Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/fb/a24fbf743f969c747df4a8a42ebef2b09cad5340aeda872115d1feeb8950/qprogram-0.2.0-py3-none-any.whl", hash = "sha256:16135be36d26e417fdab7b9b603845e93f13337363d5d30eb41ce683588a984f", size = 317479, upload-time = "2026-09-08T11:10:16.892Z" },
 ]
 
 [[package]]
@@ -820,7 +820,7 @@ docs = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "qprogram", specifier = ">=0.1.0" }]
+requires-dist = [{ name = "qprogram", specifier = ">=0.2.0" }]
 
 [package.metadata.requires-dev]
 dev = [

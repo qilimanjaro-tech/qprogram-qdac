@@ -77,7 +77,7 @@ imports the package on demand:
 ```python
 import qprogram as qp
 
-text = '#!QProgram 1.0\nrequire qdac 0.1\nbody:\n  qdac.set_offset "flux_q0" 0.42\n'
+text = '#!QProgram 0.2\nrequire qdac 0.1\nbody:\n  qdac.set_offset "flux_q0" 0.42\n'
 program = qp.loads(text)
 print(type(program.body.elements[0]).__module__)
 ```
@@ -676,7 +676,7 @@ from their default, and the parser drives itself from the same signature:
 
 <!-- check: skip -->
 ```
-#!QProgram 1.0
+#!QProgram 0.2
 
 require qdac 0.1
 
@@ -725,7 +725,7 @@ hand `Play.__init__` one argument short:
 
 <!-- check: skip -->
 ```
-#!QProgram 1.0
+#!QProgram 0.2
 
 require qdac 0.3
 
@@ -782,7 +782,7 @@ check are half of what is being proved:
 
 ```python
 def test_a_0_3_file_gets_the_dwell_1_0_made_required():
-    text = '#!QProgram 1.0\n\nrequire qdac 0.3\n\nbody:\n  qdac.play "flux_q0" "ramp_up"\n'
+    text = '#!QProgram 0.2\n\nrequire qdac 0.3\n\nbody:\n  qdac.play "flux_q0" "ramp_up"\n'
     assert qp.loads(text).body.elements[0].dwell == 1
 ```
 

@@ -36,7 +36,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "qprogram>=0.1.0",
+    "qprogram>=0.2.0",
 ]
 
 # Vendor-discovery entry point. A `.qp` file whose header carries `require qdac <x.y>` makes

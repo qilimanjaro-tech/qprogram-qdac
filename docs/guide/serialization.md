@@ -30,7 +30,7 @@ This page covers the qdac-specific part.
 A file holding qdac operations names the vendor once, above the body:
 
 ```
-#!QProgram 1.0
+#!QProgram 0.2
 
 require qdac 0.1
 
@@ -56,7 +56,7 @@ print(qp.dumps(program))
 ```
 
 ```
-#!QProgram 1.0
+#!QProgram 0.2
 
 require qdac 0.1
 
@@ -145,7 +145,7 @@ import sys
 
 import qprogram as qp
 
-TEXT = """#!QProgram 1.0
+TEXT = """#!QProgram 0.2
 
 require qdac 0.1
 
@@ -251,7 +251,7 @@ print(qp.dumps(program))
 ```
 
 ```
-#!QProgram 1.0
+#!QProgram 0.2
 
 require qdac 0.1
 
@@ -313,7 +313,7 @@ and normalizes the same way:
 import qprogram as qp
 import qprogram_qdac  # registers the qdac operations with the serializer
 
-TEXT = """#!QProgram 1.0
+TEXT = """#!QProgram 0.2
 
 require qdac 0.1
 
@@ -363,7 +363,7 @@ print("body equal:", reloaded.body == program.body)
 ```
 
 ```
-#!QProgram 1.0
+#!QProgram 0.2
 
 require qdac 0.1
 
@@ -405,7 +405,7 @@ bodies puts its one statement on line 6:
 import qprogram as qp
 import qprogram_qdac  # registers the qdac operations with the serializer
 
-HEAD = """#!QProgram 1.0
+HEAD = """#!QProgram 0.2
 
 require qdac 0.1
 
