@@ -104,8 +104,11 @@ not appear in new text.
 
 ## Mechanics
 
-Wrap prose near 80 columns and let the checker warn above 88. Tables and long
-links are exempt, since breaking them hurts more than it helps.
+Write each paragraph on one line and let the browser wrap it. A newline inside
+a paragraph is not a line break the reader sees, so a wrap column is a
+convention held by hand on every edit and lost on the next reflow. Fenced code,
+tables, list structure, and the mkdocstrings options blocks keep their own line
+breaks, and so do the HTML comments the checker reads.
 
 Fence every code block with its language: `python` for Python, `bash` for shell,
 `toml` for configuration. Leave the fence bare for `.qp` content and for terminal

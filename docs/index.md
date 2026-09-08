@@ -1,15 +1,8 @@
 # QProgram QDAC
 
-`qprogram-qdac` adds QDevil QDAC support to
-[QProgram](https://qilimanjaro-tech.github.io/qprogram/), the pulse-level
-quantum programming DSL. The QDAC is a slow high-precision DAC, used most
-often for flux biasing.
+`qprogram-qdac` adds QDevil QDAC support to [QProgram](https://qilimanjaro-tech.github.io/qprogram/), the pulse-level quantum programming DSL. The QDAC is a slow high-precision DAC, used most often for flux biasing.
 
-The core DSL knows nothing about any instrument. This package plugs into it
-through the vendor hooks and contributes three things: a `qdac` namespace
-on every program, a capability profile describing what a QDAC channel can
-do, and `.qp` serialization for the operations it adds. Importing the
-package is what turns those on.
+The core DSL knows nothing about any instrument. This package plugs into it through the vendor hooks and contributes three things: a `qdac` namespace on every program, a capability profile describing what a QDAC channel can do, and `.qp` serialization for the operations it adds. Importing the package is what turns those on.
 
 ## What the qdac namespace gives you
 
@@ -20,12 +13,7 @@ package is what turns those on.
 | `program.qdac.set_trigger`    | Arm chassis trigger outputs to fire at a sequence position, for a given duration.               |
 | `program.qdac.wait_trigger`   | Halt the channel's sequencer until an external trigger arrives on an input port.                |
 
-Two facts about the instrument are declared in the profile rather than
-left in a comment. The QDAC has **no FPGA**, so a swept parameter is
-re-uploaded from the host between iterations, and `qdac-default-v1` puts
-the enclosing loop host-side. A QDAC channel is **single-channel**, so the
-profile carries no IQ waveform tokens at all: an IQ pulse on a QDAC bus is
-a `missing-capability` error from `qp.validate`.
+Two facts about the instrument are declared in the profile rather than left in a comment. The QDAC has **no FPGA**, so a swept parameter is re-uploaded from the host between iterations, and `qdac-default-v1` puts the enclosing loop host-side. A QDAC channel is **single-channel**, so the profile carries no IQ waveform tokens at all: an IQ pulse on a QDAC bus is a `missing-capability` error from `qp.validate`.
 
 ## A first program
 
@@ -70,9 +58,7 @@ body:
   qdac.wait_trigger q[0].flux 3
 ```
 
-The `require qdac 0.1` line is the whole compatibility story. `qp.load`
-checks it against the installed extension, and imports this package on
-demand if the reader never did.
+The `require qdac 0.1` line is the whole compatibility story. `qp.load` checks it against the installed extension, and imports this package on demand if the reader never did.
 
 ## Where to go next
 
@@ -88,10 +74,4 @@ demand if the reader never did.
 
 ## Status
 
-The vendor protocol version is this package's own version, and `.qp` files
-carry it as `require qdac <major>.<minor>`. A file loads against any installed
-`qprogram-qdac` at that version or above: when a release changes an operation's
-wire form it registers a migration for it, and the older spelling is rewritten
-on the way in. A file asking for more than the installed package provides is a
-`ParseError` rather than a partial load. The Python API is pre-1.0 and allowed
-to move; the wire form is the steadier of the two.
+The vendor protocol version is this package's own version, and `.qp` files carry it as `require qdac <major>.<minor>`. A file loads against any installed `qprogram-qdac` at that version or above: when a release changes an operation's wire form it registers a migration for it, and the older spelling is rewritten on the way in. A file asking for more than the installed package provides is a `ParseError` rather than a partial load. The Python API is pre-1.0 and allowed to move; the wire form is the steadier of the two.

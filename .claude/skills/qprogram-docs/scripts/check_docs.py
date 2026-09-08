@@ -21,7 +21,7 @@ Three groups of checks:
   links   Relative `.md` links and their anchors must resolve. Every page under docs_dir
           must appear in the zensical nav.
   style   House writing rules: no em dashes, no filler vocabulary, sentence-case
-          headings, wrapped prose, bullets only where they enumerate something.
+          headings, bullets only where they enumerate something.
 
 Code and link findings are errors, because they are objectively broken. Style findings
 are warnings, because the existing tree carries a backlog of them. `--strict` promotes
@@ -125,7 +125,6 @@ PROPER_NOUNS = {
     "TOML",
 }
 
-MAX_LINE = 88
 MAX_BULLET_RUN = 12
 
 # Checks that describe the machine running them rather than the page being checked.
@@ -302,7 +301,6 @@ def check_style(doc: Doc) -> Iterator[Finding]:
     bullet_run_start = 0
     definitions = 0
     last_level = 0
-    in_table = False
 
     for i, raw in prose_lines(doc):
         stripped = INLINE_CODE_RE.sub("``", raw)
@@ -317,12 +315,6 @@ def check_style(doc: Doc) -> Iterator[Finding]:
             m = re.search(pattern, lowered)
             if m:
                 yield finding(i, "filler", f"{m.group(0)!r}: {advice}")
-
-        in_table = raw.lstrip().startswith("|")
-        # A line holding nothing but one link cannot be wrapped: the URL is one token.
-        is_link_only = bool(re.fullmatch(r"\s*(?:[-*]|\d+\.)?\s*\[[^\]]*\]\([^)]*\)[.,;:]?\s*", raw))
-        if len(raw) > MAX_LINE and not in_table and not is_link_only:
-            yield finding(i, "long-line", f"{len(raw)} chars; wrap prose near 80")
 
         heading = HEADING_RE.match(raw)
         if heading:
