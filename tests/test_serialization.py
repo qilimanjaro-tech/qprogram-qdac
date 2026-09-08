@@ -21,8 +21,10 @@ byte stability: dumping a reloaded program must reproduce the file it came from.
 
 from __future__ import annotations
 
+import re
+
 import pytest
-from _header import HEADER, REQUIRE, VENDOR_MAJOR
+from _header import HEADER, REQUIRE, VENDOR_MAJOR, VENDOR_VERSION, needs_core_migrations
 from qprogram import ParseError, Variable, dumps, loads
 from qprogram.sweeps import Range
 from qprogram.waveforms import Ramp, Square
@@ -213,16 +215,19 @@ def test_loads_with_older_minor_accepted():
     assert loads(text).body.elements
 
 
-def test_loads_with_future_minor_rejected():
-    """The installed extension cannot promise a minor it does not have."""
-    text = f'{HEADER}\nrequire qdac {VENDOR_MAJOR}.99\nbody:\n  qdac.set_offset "flux" 0.5\n'
-    with pytest.raises(ParseError, match="minor version too old"):
+@pytest.mark.parametrize("required", [f"{VENDOR_MAJOR}.99", "999.0"])
+def test_loads_asking_for_more_than_is_installed_rejected(required):
+    """Whichever component is ahead, this package cannot build what the file names."""
+    text = f'{HEADER}\nrequire qdac {required}\nbody:\n  qdac.set_offset "flux" 0.5\n'
+    with pytest.raises(ParseError, match=rf"file requires qdac {re.escape(required)}"):
         loads(text)
 
 
-def test_loads_with_wrong_major_rejected():
-    text = f'{HEADER}\nrequire qdac 999.0\nbody:\n  qdac.set_offset "flux" 0.5\n'
-    with pytest.raises(ParseError, match="major versions must match"):
+@needs_core_migrations
+def test_loads_with_a_patch_in_the_require_line_rejected():
+    """A `require` line names a wire form, and a patch release of this package has none of its own."""
+    text = f'{HEADER}\nrequire qdac {VENDOR_VERSION}.0\nbody:\n  qdac.set_offset "flux" 0.5\n'
+    with pytest.raises(ParseError, match=r"must be exactly major\.minor"):
         loads(text)
 
 

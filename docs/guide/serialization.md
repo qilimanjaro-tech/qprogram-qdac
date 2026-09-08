@@ -99,27 +99,31 @@ truncates it to `major.minor` on the `require` line, because compatibility is
 decided at that granularity and the patch component is informational.
 
 Running from a source tree with no installed metadata leaves `__version__` at
-`0.0.0`, and every file requiring `qdac 0.1` then fails the minor check. Install
-the package, in editable mode if you are working on it, rather than putting
-`src/` on `PYTHONPATH`.
+`0.0.0`, and every file requiring `qdac 0.1` then asks for more than is
+installed. Install the package, in editable mode if you are working on it,
+rather than putting `src/` on `PYTHONPATH`.
 
 ## Version mismatches
 
 The parser resolves each `require` line against the registered version before
-it reads the body. Two rules decide the outcome: the majors must be equal, and
-the installed minor must be at least the file's minor. With `qdac 0.1.0`
-installed, `require qdac 0.1` and `require qdac 0.0` load, and these two fail:
+it reads the body. One rule decides the outcome: the installed package must be
+able to provide what the line asks for. With `qdac 0.1.0` installed,
+`require qdac 0.1` and `require qdac 0.0` load, and these fail:
 
 ```
-ParseError: Line 3: file requires qdac 0.2 or compatible; installed qdac is 0.1.0 — minor version too old
-ParseError: Line 3: file requires qdac 1.0 (major 1); installed qdac is 0.1.0 (major 0) — major versions must match
+ParseError: Line 3: file requires qdac 0.2, newer than the installed qdac 0.1.0 — install qdac 0.2 or newer
+ParseError: Line 3: file version '0.1.0' must be exactly major.minor
 ```
 
-A newer minor is the readable case: `0.1` loads under an installed `0.3`,
-because minor releases only add operations. A file that requires a minor the
-installed package does not have would reference statements this package cannot
-build, so it is refused up front. A major difference means the operations
-themselves may have changed shape, and neither direction is accepted.
+An older line is the readable case: `0.1` loads under an installed `0.3`,
+because a minor release only adds operations, and an older line whose spelling
+did change is repaired by the
+[migration](../developer/lowering.md#changing-one-that-already-exists) that
+release registered — so an earlier major loads too. A file that asks for a
+version this package does not have would reference statements it cannot build,
+so it is refused up front. The line carries `major.minor` and nothing else: a
+patch release of this package changes code and never the wire form, so there is
+no patch for a file to declare.
 
 ## Auto-activation
 

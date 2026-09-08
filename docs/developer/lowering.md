@@ -685,8 +685,11 @@ body:
 ```
 
 Adding an operation is a minor version bump of the vendor protocol. Older files
-keep loading, because the parser accepts a file whose minor is not newer than
-the installed extension's.
+keep loading, because the parser accepts any `require` line the installed
+extension can satisfy, and an older file never mentions the operation that was
+added. Changing the wire form of one that already ships is the case that needs
+work, and [Changing one that already exists](#changing-one-that-already-exists)
+below walks through it.
 
 ### The tests that come with it
 
@@ -708,3 +711,83 @@ Each new operation earns one test per module in `tests/`:
 
 [Contributing](contributing.md) has the rest of the checklist: the docs pages
 and the API reference entry that go in the same pull request.
+
+### Changing one that already exists
+
+Renaming an operation, renaming or reordering a constructor parameter, or giving
+an argument a new meaning breaks every file that already uses it. That is a
+major bump of the vendor protocol, and the release that does it registers a
+rewrite so that the files users already have go on loading.
+
+Say 1.0 makes `dwell` required on `qdac.play`, where it had been optional with a
+default of `1`. A file written against 0.3 leaves it out, so the parser would
+hand `Play.__init__` one argument short:
+
+<!-- check: skip -->
+```
+#!QProgram 1.0
+
+require qdac 0.3
+
+body:
+  qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=1000)
+```
+
+The rewrite goes in `__init__.py` beside the `register_vendor_operation` calls,
+so that the import a `require qdac` line triggers is what registers it:
+
+```python
+# __init__.py
+import re
+
+from qprogram.serialization.migrations import register_vendor_migration
+
+_PLAY = re.compile(r"^\s*qdac\.play\b.*$")
+
+
+@register_vendor_migration("qdac", "1.0")
+def _play_took_a_dwell(lines: list[str]) -> list[str]:
+    """Give a pre-1.0 play line the dwell that release made required."""
+    return [_PLAY.sub(r"\g<0> dwell=1", line) for line in lines]
+```
+
+The pattern matches the operation keyword and `\g<0>` appends to the whole line,
+rather than trying to pick the argument list apart: a waveform constructor
+carries commas and spaces of its own, and a swept argument carries parentheses.
+The value appended is the default that release removed, so a file that never
+said `dwell` keeps the behavior it had, and the parser binds the keyword by name
+like any other.
+
+Four rules govern the rewrite:
+
+- **The version is this package's, not the format's.** The chain is bounded by
+  the installed extension, so `require qdac 0.3` read against an installed 1.0.1
+  runs every rewrite keyed above 0.3 and no higher than 1.0. A file already at
+  1.0 runs none of them.
+- **One rewrite per breaking change, keyed to the release that ships it.** A
+  release that only adds operations registers nothing. One keyed to a version
+  that has not shipped yet never runs, so it can land in the same pull request
+  as the change it repairs.
+- **The pattern has to be narrow.** A migration is text in and text out with no
+  parse in between, so anchor it on something only the syntax being changed
+  produces. Here that is the `qdac.play` keyword at the head of a line.
+- **Lines in, as many lines out.** The rewrite is handed every line of the file,
+  header and `require` lines included, and the core refuses one that hands back
+  a different number, since a diagnostic's line number has to go on pointing at
+  the line the author wrote.
+
+`tests/test_serialization.py` is where it earns its test, and that test is a
+load rather than a call to the function, since the registration and the version
+check are half of what is being proved:
+
+```python
+def test_a_0_3_file_gets_the_dwell_1_0_made_required():
+    text = '#!QProgram 1.0\n\nrequire qdac 0.3\n\nbody:\n  qdac.play "flux_q0" "ramp_up"\n'
+    assert qp.loads(text).body.elements[0].dwell == 1
+```
+
+A vendor rewrite only ever sees `.qp` lines. A `.wfl` waveform library carries
+no `require` line and so claims no vendor version, which leaves its own
+versioning to the core, whose
+[serialization internals](https://qilimanjaro-tech.github.io/qprogram/developer/serialization-internals.html#vendor-migrations)
+document the mechanism these calls reach into.
