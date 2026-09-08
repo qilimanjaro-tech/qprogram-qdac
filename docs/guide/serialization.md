@@ -117,11 +117,13 @@ ParseError: Line 3: file version '0.1.0' must be exactly major.minor
 
 An older line is the readable case: `0.1` loads under an installed `0.3`,
 because a minor release only adds operations, and an older line whose spelling
-did change is repaired by the migration that release registered — so an earlier
-major loads too. A file that asks for a version this package does not have would
-reference statements it cannot build, so it is refused up front. The line carries
-`major.minor` and nothing else: a patch release of this package changes code and
-never the wire form, so there is no patch for a file to declare.
+did change is repaired by the
+[migration](../developer/lowering.md#changing-one-that-already-exists) that
+release registered — so an earlier major loads too. A file that asks for a
+version this package does not have would reference statements it cannot build,
+so it is refused up front. The line carries `major.minor` and nothing else: a
+patch release of this package changes code and never the wire form, so there is
+no patch for a file to declare.
 
 ## Auto-activation
 
