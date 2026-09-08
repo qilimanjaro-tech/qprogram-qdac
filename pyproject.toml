@@ -1,6 +1,6 @@
 [project]
 name = "qprogram-qdac"
-version = "0.1.0"
+version = "0.2.0"
 description = "QDevil QDAC vendor extensions for the QProgram pulse-level quantum programming DSL."
 authors = [{name = "Qilimanjaro Quantum Tech", email = "info@qilimanjaro.tech"}]
 readme = "README.md"
@@ -36,7 +36,7 @@ classifiers = [
     "Typing :: Typed",
 ]
 dependencies = [
-    "qprogram>=0.1.0",
+    "qprogram>=0.2.0",
 ]
 
 # Vendor-discovery entry point. A `.qp` file whose header carries `require qdac <x.y>` makes
