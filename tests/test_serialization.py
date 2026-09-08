@@ -22,6 +22,7 @@ byte stability: dumping a reloaded program must reproduce the file it came from.
 from __future__ import annotations
 
 import pytest
+from _header import HEADER, REQUIRE, VENDOR_MAJOR
 from qprogram import ParseError, Variable, dumps, loads
 from qprogram.sweeps import Range
 from qprogram.waveforms import Ramp, Square
@@ -162,9 +163,9 @@ def test_play_default_args_round_trip():
 def test_loads_hand_written_file():
     """The documented wire form parses, and the writer reproduces it byte for byte."""
     text = (
-        "#!QProgram 1.0\n"
+        f"{HEADER}\n"
         "\n"
-        "require qdac 0.1\n"
+        f"{REQUIRE}\n"
         "\n"
         "body:\n"
         '  qdac.set_offset "flux_q0" 0.42\n'
@@ -207,20 +208,20 @@ def test_loads_with_matching_qdac_require_ok():
 
 
 def test_loads_with_older_minor_accepted():
-    """A file written against an earlier minor of the extension still loads."""
-    text = '#!QProgram 1.0\nrequire qdac 0.0\nbody:\n  qdac.set_offset "flux" 0.5\n'
+    """A file written against the extension's first minor still loads."""
+    text = f'{HEADER}\nrequire qdac {VENDOR_MAJOR}.0\nbody:\n  qdac.set_offset "flux" 0.5\n'
     assert loads(text).body.elements
 
 
 def test_loads_with_future_minor_rejected():
     """The installed extension cannot promise a minor it does not have."""
-    text = '#!QProgram 1.0\nrequire qdac 0.99\nbody:\n  qdac.set_offset "flux" 0.5\n'
+    text = f'{HEADER}\nrequire qdac {VENDOR_MAJOR}.99\nbody:\n  qdac.set_offset "flux" 0.5\n'
     with pytest.raises(ParseError, match="minor version too old"):
         loads(text)
 
 
 def test_loads_with_wrong_major_rejected():
-    text = '#!QProgram 1.0\nrequire qdac 999.0\nbody:\n  qdac.set_offset "flux" 0.5\n'
+    text = f'{HEADER}\nrequire qdac 999.0\nbody:\n  qdac.set_offset "flux" 0.5\n'
     with pytest.raises(ParseError, match="major versions must match"):
         loads(text)
 
