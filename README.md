@@ -55,7 +55,7 @@ The flux bias comes from the QDAC, the drive and readout from whatever vendor ow
 - **Four operations under one namespace.** `set_offset` holds a DC voltage on a channel, `play` uploads an envelope to the channel's waveform engine with explicit dwell, delay, repetitions and stepped mode, and `set_trigger` / `wait_trigger` wire the channel into the chassis trigger network so QDAC sequences line up with instruments driving other buses.
 - **Host-side sweeps, declared rather than guessed.** The QDAC has no FPGA, so a swept parameter has to be re-uploaded from the host between iterations. The `qdac-default-v1` profile says so through a domain constraint, and `qp.explain(program, capabilities)` prints the enclosing loop as `[host]` instead of failing at compile time.
 - **Single-channel by declaration.** The profile lists only single-channel waveform tokens. An IQ waveform on a QDAC bus is a `missing-capability` error from `qp.validate`, not a runtime surprise.
-- **Serialization included.** Every operation round-trips through the `.qp` text format, under a `require qdac 0.1` header line. A file that names `qdac` activates this package on load through its entry point, so the reader does not have to import it first.
+- **Serialization included.** Every operation round-trips through the `.qp` text format, under a `require qdac 0.2` header line. A file that names `qdac` activates this package on load through its entry point, so the reader does not have to import it first.
 - **Typed access.** `QProgram` from this package is the core builder with a typed `.qdac` property. `QdacMixin` composes with other vendor mixins when a platform spans several instruments.
 
 ## Documentation

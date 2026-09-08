@@ -44,17 +44,17 @@ print(qp.dumps(program).splitlines()[2])
 
 ```
 QProgram QdacNamespace
-0.1.0
+0.2.0
 (0, 1, 0)
-require qdac 0.1
+require qdac 0.2
 ```
 
-Loading a `.qp` file does not need that import to have happened first. The `[project.entry-points."qprogram.vendors"]` table in `pyproject.toml` maps the vendor name to this module, so `qp.loads` on a file carrying `require qdac 0.1` imports the package on demand:
+Loading a `.qp` file does not need that import to have happened first. The `[project.entry-points."qprogram.vendors"]` table in `pyproject.toml` maps the vendor name to this module, so `qp.loads` on a file carrying `require qdac 0.2` imports the package on demand:
 
 ```python
 import qprogram as qp
 
-text = '#!QProgram 0.2\nrequire qdac 0.1\nbody:\n  qdac.set_offset "flux_q0" 0.42\n'
+text = '#!QProgram 0.2\nrequire qdac 0.2\nbody:\n  qdac.set_offset "flux_q0" 0.42\n'
 program = qp.loads(text)
 print(type(program.body.elements[0]).__module__)
 ```
@@ -534,7 +534,7 @@ Serialization comes for free. The default serializer reflects on `__init__` to e
 ```
 #!QProgram 0.2
 
-require qdac 0.1
+require qdac 0.2
 
 body:
   qdac.set_slew_rate "flux_q0" 0.05

@@ -252,7 +252,7 @@ qdac.wait_trigger "flux_q0" 3
 qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=1000) dwell=100
 ```
 
-A file carrying any of those lines declares `require qdac 0.1` in its header. [Saving and loading](serialization.md) covers the header, the version rule, and how a `.qp` file activates this package on load.
+A file carrying any of those lines declares `require qdac 0.2` in its header. [Saving and loading](serialization.md) covers the header, the version rule, and how a `.qp` file activates this package on load.
 
 ## See also
 

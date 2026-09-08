@@ -40,7 +40,7 @@ That prints the program as `.qp` text:
 ```
 #!QProgram 0.2
 
-require qdac 0.1
+require qdac 0.2
 
 metadata:
   label: "flux-ramp"
@@ -58,7 +58,7 @@ body:
   qdac.wait_trigger q[0].flux 3
 ```
 
-The `require qdac 0.1` line is the whole compatibility story. `qp.load` checks it against the installed extension, and imports this package on demand if the reader never did.
+The `require qdac 0.2` line is the whole compatibility story. `qp.load` checks it against the installed extension, and imports this package on demand if the reader never did.
 
 ## Where to go next
 
