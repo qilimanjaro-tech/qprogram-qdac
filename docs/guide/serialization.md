@@ -94,7 +94,7 @@ ParseError: Line 3: file requires qdac 1.0, newer than the installed qdac 0.2.0 
 ParseError: Line 3: file version '0.1.0' must be exactly major.minor
 ```
 
-An older line is the readable case: `0.1` loads under an installed `0.3`, because a minor release only adds operations, and an older line whose spelling did change is repaired by the [migration](../developer/lowering.md#changing-one-that-already-exists) that release registered — so an earlier major loads too. A file that asks for a version this package does not have would reference statements it cannot build, so it is refused up front. The line carries `major.minor` and nothing else: a patch release of this package changes code and never the wire form, so there is no patch for a file to declare.
+An older line is the readable case: `0.1` loads under an installed `0.3`, because a minor release only adds operations, and an older line whose spelling did change is repaired by the [migration](../developer/lowering.md#changing-one-that-already-exists) that release registered — so an earlier major loads too. The one exception is the release that moved `play`'s `dwell` from nanoseconds to microseconds, and `play`'s `delay` and `set_trigger`'s `duration` from nanoseconds to seconds: it registers no migration, so a file written before it loads with its numbers read in the new units. Rebuild such a file from its program rather than loading it. A file that asks for a version this package does not have would reference statements it cannot build, so it is refused up front. The line carries `major.minor` and nothing else: a patch release of this package changes code and never the wire form, so there is no patch for a file to declare.
 
 ## Auto-activation
 
@@ -153,7 +153,7 @@ Positional arguments come in constructor order, then optional keywords in any or
 | Operation | Wire form |
 |---|---|
 | `wait_trigger` | `qdac.wait_trigger "flux_q0" 2` |
-| `set_trigger` | `qdac.set_trigger "flux_q0" 100 position="end_step" outputs=[1, 3]` |
+| `set_trigger` | `qdac.set_trigger "flux_q0" 1e-05 position="end_step" outputs=[1, 3]` |
 | `set_offset` | `qdac.set_offset "flux_q0" 0.42` |
 | `play` | `qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=2000)` |
 
@@ -165,7 +165,7 @@ Quoting is the type distinction. A quoted token is a plain string: a raw bus nam
 |---|---|---|
 | Raw bus name | `"flux_q0"` | the first argument of every operation |
 | Schema-backed bus | `q[0].flux` | the first argument of every operation |
-| Number | `2`, `100`, `0.42` | `port`, `duration`, `offset`, `dwell`, `delay`, `repetitions` |
+| Number | `2`, `200`, `0.42`, `1e-05` | `port`, `duration`, `offset`, `dwell`, `delay`, `repetitions` |
 | Boolean | `true`, `false` | `stepped` |
 | String choice | `"end_step"` | `position` |
 | Waveform alias | `"flux_pulse"` | `play`'s waveform |
@@ -173,6 +173,8 @@ Quoting is the type distinction. A quoted token is a plain string: a raw bus nam
 | Variable reference | `bias` | `offset` |
 | Expression | `((bias * 0.5) - 0.25)` | `offset` |
 | Sequence | `[1, 3]` | `outputs` |
+
+A number is written the way Python prints it, so a trigger `duration` of 10 μs, which is `10e-6` seconds, reads `1e-05` on the wire and loads back as the same float.
 
 Two generic writer forms have no qdac argument to land on: brace-dict literals (`matrix={"a": 1.0}`) for mapping arguments, and `null` for `None`. No qdac operation takes a mapping, and none of their optional arguments defaults to `None`.
 
@@ -192,12 +194,12 @@ with program.sweep(bias, qp.Range(start=0.0, stop=1.0, step=0.1)):
     program.qdac.set_offset("flux_q0", 0.42)
     program.qdac.set_offset("flux_q0", bias)
     program.qdac.set_offset("flux_q0", (bias * 0.5) - 0.25)
-    program.qdac.set_trigger("flux_q0", 100, outputs=[1])
-    program.qdac.set_trigger("flux_q0", 100, position="end_step", outputs=(3, 1, 3))
+    program.qdac.set_trigger("flux_q0", 10e-6, outputs=[1])
+    program.qdac.set_trigger("flux_q0", 10e-6, position="end_step", outputs=(3, 1, 3))
     program.qdac.wait_trigger("flux_q0", 2)
     program.qdac.play("flux_q0", "flux_pulse")
     program.qdac.play("flux_q0", Ramp(0.0, 1.0, 2000))
-    program.qdac.play("flux_q0", Square(0.3, 1000), dwell=200, delay=50, repetitions=2, stepped=True)
+    program.qdac.play("flux_q0", Square(0.3, 1000), dwell=200, delay=1e-3, repetitions=2, stepped=True)
 
 print(qp.dumps(program))
 ```
@@ -214,12 +216,12 @@ body:
     qdac.set_offset "flux_q0" 0.42
     qdac.set_offset "flux_q0" bias
     qdac.set_offset "flux_q0" ((bias * 0.5) - 0.25)
-    qdac.set_trigger "flux_q0" 100 outputs=[1]
-    qdac.set_trigger "flux_q0" 100 position="end_step" outputs=[1, 3]
+    qdac.set_trigger "flux_q0" 1e-05 outputs=[1]
+    qdac.set_trigger "flux_q0" 1e-05 position="end_step" outputs=[1, 3]
     qdac.wait_trigger "flux_q0" 2
     qdac.play "flux_q0" "flux_pulse"
     qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=2000)
-    qdac.play "flux_q0" Square(amplitude=0.3, duration=1000) dwell=200 delay=50 repetitions=2 stepped=true
+    qdac.play "flux_q0" Square(amplitude=0.3, duration=1000) dwell=200 delay=0.001 repetitions=2 stepped=true
 ```
 
 ### Buses
@@ -261,7 +263,7 @@ TEXT = """#!QProgram 0.2
 require qdac 0.2
 
 body:
-  qdac.set_trigger "flux_q0" 100 outputs="2,1,2"
+  qdac.set_trigger "flux_q0" 1e-05 outputs="2,1,2"
 """
 
 program = qp.loads(TEXT)
@@ -271,7 +273,7 @@ print(qp.dumps(program).splitlines()[-1])
 
 ```
 (1, 2)
-  qdac.set_trigger "flux_q0" 100 outputs=[1, 2]
+  qdac.set_trigger "flux_q0" 1e-05 outputs=[1, 2]
 ```
 
 ## A full round trip
@@ -292,7 +294,7 @@ flux = schema.q[0].flux
 
 with program.sweep(bias, qp.Linspace(start=-0.5, stop=0.5, num=11)):
     program.qdac.set_offset(flux, bias)
-    program.qdac.set_trigger(flux, 100, position="step", outputs={2, 1})
+    program.qdac.set_trigger(flux, 10e-6, position="step", outputs={2, 1})
     program.qdac.play(flux, Ramp(0.0, 1.0, 2000), dwell=200, repetitions=4)
     program.qdac.wait_trigger(flux, port=3)
 
@@ -324,7 +326,7 @@ body:
 
   for bias in Linspace(start=-0.5, stop=0.5, num=11):
     qdac.set_offset q[0].flux bias
-    qdac.set_trigger q[0].flux 100 position="step" outputs=[1, 2]
+    qdac.set_trigger q[0].flux 1e-05 position="step" outputs=[1, 2]
     qdac.play q[0].flux Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=2000) dwell=200 repetitions=4
     qdac.wait_trigger q[0].flux 3
 ```

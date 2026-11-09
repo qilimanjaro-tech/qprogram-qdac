@@ -20,6 +20,11 @@ QDAC is a slow high-precision DAC, most often used for flux biasing on transmon 
 waveform engine emits an envelope from a programmable sequencer with explicit dwell, delay,
 repetition and stepping controls. These operations expose those controls, plus the trigger network
 the engine listens to.
+
+The timing arguments do not use the nanoseconds of the core DSL and the qblox extension:
+[`Play`][qprogram_qdac.Play]'s ``dwell`` is an integer number of microseconds, and its ``delay``
+and [`SetTrigger`][qprogram_qdac.SetTrigger]'s ``duration`` are seconds. A waveform's own
+``duration`` stays in nanoseconds, since the core DSL defines it.
 """
 
 from __future__ import annotations
@@ -94,12 +99,12 @@ class SetTrigger(Operation):
     """An arming of one or more QDAC trigger outputs at a chosen sequence position.
 
     The QDAC chassis carries an internal trigger bus with several output lines. This operation arms
-    a subset of them to fire for ``duration`` nanoseconds at a sequence event: sequence start, every
+    a subset of them to fire for ``duration`` seconds at a sequence event: sequence start, every
     step, sequence end, or every step's end.
 
     Args:
         bus (str): QDAC channel whose trigger outputs are being configured.
-        duration (int): Trigger-active duration in nanoseconds.
+        duration (float): Trigger-active duration in seconds, ``10e-6`` for 10 μs.
         position (TriggerPosition): Sequence event at which the triggers fire, one of ``"start"``,
             ``"step"``, ``"end"``, ``"end_step"``. Default ``"start"``.
         outputs (Iterable[int] | str): Trigger output indices to arm. Any iterable of ints, or a
@@ -119,7 +124,7 @@ class SetTrigger(Operation):
     def __init__(
         self,
         bus: str,
-        duration: int,
+        duration: float,
         position: TriggerPosition = "start",
         outputs: Iterable[int] | str = (),
     ) -> None:
@@ -169,10 +174,11 @@ class Play(Operation):
         waveform (Waveform): Single-channel [`Waveform`][qprogram.waveforms.Waveform] whose envelope is
             uploaded to the waveform engine. A ``str`` alias is accepted here too, to be resolved
             later by [`with_waveforms`][qprogram.QProgram.with_waveforms].
-        dwell (int): Per-sample dwell time in nanoseconds, which sets the emission rate. Default
-            ``1``.
-        delay (int): Delay in nanoseconds between sequence start and the first sample. Default
-            ``0``.
+        dwell (int): Per-sample dwell time in microseconds, which sets the emission rate. The
+            QDAC-II floor is 2 μs, which the ``qdac.dwell-below-minimum`` predicate checks at
+            validation time. Default ``2``.
+        delay (float): Delay in seconds between sequence start and the first sample. Default
+            ``0.0``.
         repetitions (int): How many times the engine emits the envelope in total, the first
             emission included. Default ``1``.
         stepped (bool): ``True`` to step through the samples discretely, re-arming the DAC for each
@@ -185,8 +191,8 @@ class Play(Operation):
         self,
         bus: str,
         waveform: Waveform,
-        dwell: int = 1,
-        delay: int = 0,
+        dwell: int = 2,
+        delay: float = 0.0,
         repetitions: int = 1,
         stepped: bool = False,
     ) -> None:

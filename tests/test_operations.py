@@ -109,52 +109,52 @@ def test_wait_trigger_distinct_when_different():
 
 
 def test_set_trigger_defaults():
-    op = SetTrigger("flux_q0", duration=50)
+    op = SetTrigger("flux_q0", duration=10e-6)
     assert op.bus == "flux_q0"
-    assert op.duration == 50
+    assert op.duration == pytest.approx(10e-6)
     assert op.position == "start"
     assert op.outputs == ()
 
 
 def test_set_trigger_with_set_outputs():
-    op = SetTrigger("flux_q0", 50, outputs={3, 1, 2})
+    op = SetTrigger("flux_q0", 10e-6, outputs={3, 1, 2})
     assert op.outputs == (1, 2, 3)
 
 
 def test_set_trigger_with_list_outputs():
-    op = SetTrigger("flux_q0", 50, outputs=[2, 1])
+    op = SetTrigger("flux_q0", 10e-6, outputs=[2, 1])
     assert op.outputs == (1, 2)
 
 
 def test_set_trigger_each_position():
     for pos in ("start", "step", "end", "end_step"):
-        op = SetTrigger("flux_q0", 50, position=pos, outputs=[1])
+        op = SetTrigger("flux_q0", 10e-6, position=pos, outputs=[1])
         assert op.position == pos
 
 
 def test_set_trigger_introspection():
-    op = SetTrigger("flux_q0", 50, outputs=[1, 2])
+    op = SetTrigger("flux_q0", 10e-6, outputs=[1, 2])
     assert set(op.buses()) == {"flux_q0"}
     assert list(op.waveforms()) == []
     assert list(op.variables()) == []
 
 
 def test_set_trigger_required_capabilities():
-    assert SetTrigger("b", 50, outputs=[1]).required_capabilities() == {"vendor.qdac.set_trigger"}
+    assert SetTrigger("b", 10e-6, outputs=[1]).required_capabilities() == {"vendor.qdac.set_trigger"}
 
 
 def test_set_trigger_structural_equality_regardless_of_iterable_form():
     """``outputs`` normalizes on construction, so the iterable the caller used is not observable."""
-    a = SetTrigger("b", 50, outputs={1, 2, 3})
-    b = SetTrigger("b", 50, outputs=[1, 2, 3])
-    c = SetTrigger("b", 50, outputs=(3, 1, 2))
+    a = SetTrigger("b", 10e-6, outputs={1, 2, 3})
+    b = SetTrigger("b", 10e-6, outputs=[1, 2, 3])
+    c = SetTrigger("b", 10e-6, outputs=(3, 1, 2))
     assert a == b == c
     assert hash(a) == hash(b) == hash(c)
 
 
 def test_set_trigger_different_positions_not_equal():
-    a = SetTrigger("b", 50, position="start", outputs=[1])
-    b = SetTrigger("b", 50, position="end", outputs=[1])
+    a = SetTrigger("b", 10e-6, position="start", outputs=[1])
+    b = SetTrigger("b", 10e-6, position="end", outputs=[1])
     assert a != b
 
 
@@ -210,7 +210,7 @@ def test_play_defaults():
     op = Play("flux_q0", wf)
     assert op.bus == "flux_q0"
     assert op.waveform is wf
-    assert op.dwell == 1
+    assert op.dwell == 2
     assert op.delay == 0
     assert op.repetitions == 1
     assert op.stepped is False
@@ -218,10 +218,10 @@ def test_play_defaults():
 
 def test_play_all_args():
     wf = Ramp(0.0, 1.0, 1000)
-    op = Play("flux_q0", wf, dwell=10, delay=5, repetitions=3, stepped=True)
+    op = Play("flux_q0", wf, dwell=10, delay=1e-3, repetitions=3, stepped=True)
     assert op.bus == "flux_q0"
     assert op.dwell == 10
-    assert op.delay == 5
+    assert op.delay == pytest.approx(1e-3)
     assert op.repetitions == 3
     assert op.stepped is True
 

@@ -27,6 +27,7 @@ import dataclasses
 from typing import TYPE_CHECKING
 
 import numpy as np
+import pytest
 from qprogram import explain, simulate
 from qprogram.protocol import (
     BusCapabilities,
@@ -91,7 +92,7 @@ def test_qdac_default_profile_is_registered():
 def test_qdac_default_profile_carries_every_qdac_token():
     caps = CompilerCapabilities.from_profile("qdac-default-v1")
     assert caps.profile == "qdac-default-v1"
-    assert caps.version == (0, 1, 0)
+    assert caps.version == (0, 2, 0)
     for token in (
         "vendor.qdac.wait_trigger",
         "vendor.qdac.set_trigger",
@@ -117,8 +118,9 @@ def test_qdac_default_profile_holds_no_iq_waveform_tokens():
     assert not any(token.startswith("waveform.iq") for token in caps.capabilities)
 
 
-def test_qdac_default_profile_declares_the_dwell_floor():
-    assert QDAC_DEFAULT_V1.limits["min_dwell_ns"] == 100
+def test_qdac_default_profile_declares_the_dwell_floor_in_microseconds():
+    """The floor is the QDAC-II's 2 μs, in the same unit as ``play``'s ``dwell``."""
+    assert QDAC_DEFAULT_V1.limits == {"min_dwell_us": 2}
 
 
 def test_qdac_default_vendor_versions_record_qdac():
@@ -135,7 +137,7 @@ def test_program_with_every_supported_construct_validates_clean():
     caps = _make_caps()
     p = QProgram()
     p.qdac.set_offset("flux_q0", 0.42)
-    p.qdac.set_trigger("flux_q0", 50, position="start", outputs={1, 2, 3})
+    p.qdac.set_trigger("flux_q0", 10e-6, position="start", outputs={1, 2, 3})
     p.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000), dwell=10)
     p.qdac.wait_trigger("flux_q0", port=2)
     assert _diagnostics(p, caps) == []
@@ -185,7 +187,7 @@ def test_iq_waveform_is_rejected_on_a_qdac_bus():
 def test_empty_trigger_outputs_is_rejected():
     caps = _make_caps()
     p = QProgram()
-    p.qdac.set_trigger("flux_q0", 50, outputs=())
+    p.qdac.set_trigger("flux_q0", 10e-6, outputs=())
     codes = {d.code for d in _diagnostics(p, caps)}
     assert "qdac.empty-trigger-outputs" in codes
 
@@ -193,8 +195,47 @@ def test_empty_trigger_outputs_is_rejected():
 def test_non_empty_trigger_outputs_validates_clean():
     caps = _make_caps()
     p = QProgram()
-    p.qdac.set_trigger("flux_q0", 50, outputs={1})
+    p.qdac.set_trigger("flux_q0", 10e-6, outputs={1})
     assert _diagnostics(p, caps) == []
+
+
+# ---------------------------------------------------------------------------
+# Predicate: dwell floor
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("dwell", [1, 0, 1.5])
+def test_dwell_below_the_floor_is_rejected(dwell):
+    caps = _make_caps()
+    p = QProgram()
+    p.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000), dwell=dwell)
+    diagnostics = _diagnostics(p, caps)
+    assert [(d.severity, d.code) for d in diagnostics] == [("error", "qdac.dwell-below-minimum")]
+    assert diagnostics[0].node is _node(p, "Play")
+    assert diagnostics[0].limit == ("min_dwell_us", dwell)
+    assert diagnostics[0].message == (f"qdac.play dwell={dwell} is below min_dwell_us=2; dwell is in microseconds")
+
+
+@pytest.mark.parametrize("kwargs", [{}, {"dwell": 2}, {"dwell": 1000}], ids=["default", "at-floor", "above"])
+def test_dwell_at_or_above_the_floor_validates_clean(kwargs):
+    """The default dwell is the floor itself, so a ``play`` that leaves it out is valid."""
+    caps = _make_caps()
+    p = QProgram()
+    p.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000), **kwargs)
+    assert _diagnostics(p, caps) == []
+
+
+def test_dwell_read_from_a_variable_is_not_checked_against_the_floor():
+    """A dwell with no static value cannot be compared, so the floor leaves it to the platform.
+
+    The sweep that binds it is still lifted host-side, which is the other predicate's job.
+    """
+    caps = _make_caps(rt=True)
+    p = QProgram()
+    v = p.variable("dwell")
+    with p.sweep(v, Range(1, 10, 1)):
+        p.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000), dwell=v)
+    assert [d.code for d in _diagnostics(p, caps)] == ["forced-host"]
 
 
 # ---------------------------------------------------------------------------

@@ -43,7 +43,7 @@ Usage, with the pre-combined builder::
 
     qp = QProgram(label="flux-sweep")
     qp.qdac.set_offset("flux_q0", 0.42)
-    qp.qdac.set_trigger("flux_q0", 50, position="start", outputs={1, 2})
+    qp.qdac.set_trigger("flux_q0", 10e-6, position="start", outputs={1, 2})
     qp.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000), dwell=10)
     qp.qdac.wait_trigger("flux_q0", port=3)
 
@@ -58,7 +58,7 @@ That program serializes to::
 
     body:
       qdac.set_offset "flux_q0" 0.42
-      qdac.set_trigger "flux_q0" 50 outputs=[1, 2]
+      qdac.set_trigger "flux_q0" 1e-05 outputs=[1, 2]
       qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=1000) dwell=10
       qdac.wait_trigger "flux_q0" 3
 
