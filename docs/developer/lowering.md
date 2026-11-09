@@ -364,7 +364,9 @@ Site-specific rules do not belong in the vendor profile. Pass them as `extra_pre
 
 ## The dwell floor
 
-`qdac-default-v1` declares one limit:
+The QDAC-II command reference puts the floor of `LIST:DWELl` at 2 μs, and the `qdac.dwell-below-minimum` predicate rejects a `Play` whose `dwell` is shorter. The check compares numbers only, numpy scalars included. `dwell` is typed `int`, but a hand-written `.qp` file can bind it to a loop variable, and a `dwell` that is not a number is left to you.
+
+The floor is not one of the profile's limits, which are empty:
 
 ```python
 from qprogram_qdac import QDAC_DEFAULT_V1
@@ -373,15 +375,14 @@ print(dict(QDAC_DEFAULT_V1.limits))
 ```
 
 ```
-{'min_dwell_us': 2}
+{}
 ```
 
-The QDAC-II command reference puts the floor of `LIST:DWELl` at 2 μs. The core validator enforces `max_loop_nesting`, `max_parallel_loops`, and `max_measurements` at the platform slot, and `min_wait_duration_ns` at the bus slot. Every other key, `min_dwell_us` included, is carried and ignored, so the profile enforces the floor itself: its `qdac.dwell-below-minimum` predicate compares each `Play`'s `dwell` with the same constant the limit publishes. A `dwell` that is an expression has no static value and is not compared, the way the core leaves a `wait` whose duration is an expression.
-
-A predicate sees the node and the `ValidationContext`, which exposes program-wide data-flow facts and not the slot's limits. So `limit_overrides={"min_dwell_us": 5}` changes the published number and not the check. A device with a longer floor adds its own predicate, closing over the floor it wants enforced:
+A predicate sees the node and the `ValidationContext`, which exposes program-wide data-flow facts and not the slot's limits. A floor published as a limit could therefore be moved with `limit_overrides` while the check stayed at 2 μs, so the profile keeps it as a constant inside the predicate. A device with a longer floor adds its own predicate, closing over the floor it wants enforced:
 
 ```python
 from collections.abc import Iterable
+from numbers import Real
 
 import qprogram as qp
 from qprogram.protocol import (
@@ -402,7 +403,7 @@ def device_dwell_floor(min_dwell_us: float) -> Predicate:
     """Return a predicate rejecting a qdac.play whose dwell is below this device's floor."""
 
     def check(node: object, ctx: ValidationContext) -> Iterable[Diagnostic | DomainConstraint]:
-        if isinstance(node, Play) and isinstance(node.dwell, int | float) and node.dwell < min_dwell_us:
+        if isinstance(node, Play) and isinstance(node.dwell, Real) and node.dwell < min_dwell_us:
             yield Diagnostic(
                 severity="error",
                 code="site.dwell-below-minimum",
@@ -413,11 +414,9 @@ def device_dwell_floor(min_dwell_us: float) -> Predicate:
     return check
 
 
-floor = 5
 qdac_caps = CompilerCapabilities.from_profile(
     "qdac-default-v1",
-    limit_overrides={"min_dwell_us": floor},
-    extra_predicates=(device_dwell_floor(floor),),
+    extra_predicates=(device_dwell_floor(5),),
 )
 platform_caps = CompilerCapabilities.from_profile("qprogram-base-v1")
 caps = PlatformCapabilities(
@@ -436,11 +435,11 @@ for diagnostic in qp.validate(program, caps)[0]:
 
 ```
 error site.dwell-below-minimum qdac.play dwell=3 is below this device's 5 us floor
-error qdac.dwell-below-minimum qdac.play dwell=1 is below min_dwell_us=2; dwell is in microseconds
+error qdac.dwell-below-minimum qdac.play dwell=1 is below the QDAC-II minimum of 2; dwell is in microseconds
 error site.dwell-below-minimum qdac.play dwell=1 is below this device's 5 us floor
 ```
 
-The override keeps the published number truthful, and the extra predicate makes the check follow it. A dwell under 2 μs fails both checks, the profile's and the device's.
+A dwell under 2 μs fails both checks, the profile's and the device's.
 
 ## Adding an operation
 
@@ -561,7 +560,7 @@ Each new operation earns one test per module in `tests/`:
 
 ### Changing one that already exists
 
-Renaming an operation, renaming or reordering a constructor parameter, or giving an argument a new meaning breaks every file that already uses it. That is a major bump of the vendor protocol, and the release that does it registers a rewrite so that the files users already have go on loading.
+Renaming an operation, renaming or reordering a constructor parameter, or giving an argument a new meaning breaks every file that already uses it. That is a major bump of the vendor protocol, and the release that does it registers a rewrite so that the files users already have go on loading. The one exception is 0.3, which gave `play`'s `dwell` and `delay` and `set_trigger`'s `duration` new units in a minor release with no rewrite, because the package had no users yet.
 
 Say 1.0 makes `dwell` required on `qdac.play`, where it had been optional with a default of `2`. A file written against 0.3 leaves it out, so the parser would hand `Play.__init__` one argument short:
 

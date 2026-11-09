@@ -36,6 +36,7 @@ Registered as a side effect of importing `qprogram_qdac`.
 
 from __future__ import annotations
 
+from numbers import Real
 from typing import TYPE_CHECKING
 
 from qprogram.protocol import (
@@ -159,8 +160,10 @@ def _set_trigger_outputs_required(
 _MIN_DWELL_US = 2
 """The shortest dwell the QDAC-II waveform engine runs, in microseconds.
 
-The QDAC-II command reference puts the floor of ``LIST:DWELl`` at 2 μs. The profile publishes the
-number as its ``min_dwell_us`` limit, and `_play_dwell_at_least_minimum` checks against it.
+The QDAC-II command reference puts the floor of ``LIST:DWELl`` at 2 μs, and
+`_play_dwell_at_least_minimum` checks against it. The profile does not publish it as a limit: a
+predicate cannot read the slot's limits, so a published floor could be overridden with
+``limit_overrides`` without the check following it.
 """
 
 
@@ -173,11 +176,13 @@ def _play_dwell_at_least_minimum(
     No domain runs a dwell the hardware does not accept, so a short one is a
     [`Diagnostic`][qprogram.Diagnostic] and not a [`DomainConstraint`][qprogram.DomainConstraint].
 
-    The floor is the profile's own ``min_dwell_us``. A predicate sees the node and the validation
-    context but not the slot's limits, so a ``limit_overrides`` entry for ``min_dwell_us`` changes the
-    published number and not this check; a device with a longer floor adds a predicate of its own. A
-    dwell given as an [`Expression`][qprogram.Expression] has no static value to compare and is left
-    unchecked, the way the core validator leaves a ``wait`` whose duration is an expression.
+    The floor is a module constant rather than a published limit, since a predicate sees the node and
+    the validation context but not the slot's limits. A device with a longer floor adds a predicate of
+    its own.
+
+    The check compares real numbers, numpy scalars included. ``dwell`` is typed ``int``, but a
+    hand-written ``.qp`` file can still bind it to a loop variable; anything that is not a number is
+    left to the platform rather than compared.
 
     Args:
         node (Operation | Block): The AST node currently being checked.
@@ -187,15 +192,17 @@ def _play_dwell_at_least_minimum(
         One ``qdac.dwell-below-minimum`` error [`Diagnostic`][qprogram.Diagnostic] when ``node`` is a
         ``Play`` whose numeric dwell is under 2 μs. Nothing otherwise.
     """
-    if not isinstance(node, Play) or not isinstance(node.dwell, int | float):
+    if not isinstance(node, Play) or not isinstance(node.dwell, Real):
         return
     if node.dwell < _MIN_DWELL_US:
         yield Diagnostic(
             severity="error",
             code="qdac.dwell-below-minimum",
-            message=f"qdac.play dwell={node.dwell} is below min_dwell_us={_MIN_DWELL_US}; dwell is in microseconds",
+            message=(
+                f"qdac.play dwell={node.dwell} is below the QDAC-II minimum of {_MIN_DWELL_US}; "
+                "dwell is in microseconds"
+            ),
             node=node,
-            limit=("min_dwell_us", float(node.dwell)),
         )
 
 
@@ -244,17 +251,13 @@ QDAC_DEFAULT_V1 = Profile(
     version=(0, 2, 0),
     extends=None,
     capabilities=_BUS_OPS | _WAVEFORMS,
-    limits={
-        # The core validator does not read this key. The profile's own dwell predicate enforces the
-        # same constant, and the limit publishes it for tooling and platform compilers.
-        "min_dwell_us": _MIN_DWELL_US,
-    },
+    # No limits: a predicate cannot read them, so the dwell floor is the _MIN_DWELL_US constant instead.
     predicates=(
         _qdac_op_with_swept_var_is_host_only,
         _set_trigger_outputs_required,
         _play_dwell_at_least_minimum,
     ),
-    vendor_versions={"qdac": (0, 1, 0)},
+    vendor_versions={"qdac": (0, 3, 0)},
 )
 """The default QDAC bus-level capability profile.
 

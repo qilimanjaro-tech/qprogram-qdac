@@ -183,7 +183,7 @@ program.qdac.play(q[0].flux, "flux_ramp")
 program = program.with_waveforms({"flux_ramp": Ramp(0.0, 1.0, 1000)})
 ```
 
-On the instrument side this lowers to a waveform-engine program: the envelope's samples, plus `dwell`, `delay`, `repetitions`, and the stepped-or-continuous mode. The profile publishes the engine's dwell floor as the `min_dwell_us` limit.
+On the instrument side this lowers to a waveform-engine program: the envelope's samples, plus `dwell`, `delay`, `repetitions`, and the stepped-or-continuous mode.
 
 Capability tokens: `vendor.qdac.play`, `waveform.single`, and the per-class token of the envelope (`waveform.ramp`, `waveform.square`, and so on).
 

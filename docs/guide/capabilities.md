@@ -15,12 +15,12 @@ from qprogram_qdac.profiles import QDAC_DEFAULT_V1
 QDAC_DEFAULT_V1.name  # 'qdac-default-v1'
 QDAC_DEFAULT_V1.version  # (0, 2, 0)
 QDAC_DEFAULT_V1.extends  # None
-QDAC_DEFAULT_V1.limits  # {'min_dwell_us': 2}
-QDAC_DEFAULT_V1.vendor_versions  # {'qdac': (0, 1, 0)}
+QDAC_DEFAULT_V1.limits  # {}
+QDAC_DEFAULT_V1.vendor_versions  # {'qdac': (0, 3, 0)}
 len(QDAC_DEFAULT_V1.capabilities)  # 16
 ```
 
-`extends` is `None`: the profile declares its own token set rather than inheriting one. `vendor_versions` records which qdac extension version the profile was written against, mirroring a `.qp` file's `require qdac 0.1` line.
+`extends` is `None`: the profile declares its own token set rather than inheriting one. `vendor_versions` records which qdac extension version the profile was written against, mirroring a `.qp` file's `require qdac 0.3` line.
 
 Materialize it into a descriptor the same way as any other profile:
 
@@ -108,24 +108,7 @@ The `expr.*` half of that set is checked against the platform slot, which the co
 
 ## Limits
 
-One limit:
-
-| Limit          | Value | Meaning                                              |
-|----------------|-------|------------------------------------------------------|
-| `min_dwell_us` | `2`   | Shortest `dwell` the QDAC-II waveform engine runs, in microseconds. |
-
-The core validator reads four limit keys (`max_loop_nesting`, `max_parallel_loops`, `max_measurements`, `min_wait_duration_ns`) and ignores every other key, `min_dwell_us` included. The profile enforces the floor through a predicate of its own instead, described [below](#a-dwell-below-the-floor-is-an-error), and the limit publishes the same number for tooling and platform compilers.
-
-A predicate sees the node it checks and never the slot's limits, so `limit_overrides` changes the published number and not the check:
-
-```python
-longer = qp.CompilerCapabilities.from_profile(
-    "qdac-default-v1",
-    limit_overrides={"min_dwell_us": 5},
-)
-
-longer.limits  # {'min_dwell_us': 5}
-```
+The profile publishes no limits. The QDAC-II's 2 μs dwell floor is enforced by a predicate instead, described [below](#a-dwell-below-the-floor-is-an-error). A predicate sees the node it checks and never the slot's limits, so a floor published as a limit could be moved with `limit_overrides` while the check stayed at 2 μs. Leaving it out keeps what the profile publishes and what it enforces the same.
 
 A device whose floor is longer than 2 μs passes a check of its own in `from_profile`'s `extra_predicates=(...)`. [The dwell floor](../developer/lowering.md#the-dwell-floor) in the developer guide has one written out.
 
@@ -222,9 +205,9 @@ qp.validate(program, caps)[0]  # []
 
 ### A dwell below the floor is an error
 
-**Fires when** the visited node is a `Play` whose `dwell` is a number under 2. The QDAC-II holds each sample for at least 2 μs, so a shorter dwell is one the engine cannot run. A `dwell` given as an expression has no static value to compare and is not checked.
+**Fires when** the visited node is a `Play` whose `dwell` is a number under 2. The QDAC-II holds each sample for at least 2 μs, so a shorter dwell is one the engine cannot run. The check compares numbers only: `dwell` is typed `int`, but a hand-written `.qp` file can bind it to a loop variable, and that dwell is left to the platform.
 
-**Yields** a hard `Diagnostic`, `severity="error"`, code `qdac.dwell-below-minimum`, whose `limit` is `("min_dwell_us", <the dwell>)`:
+**Yields** a hard `Diagnostic`, `severity="error"`, code `qdac.dwell-below-minimum`:
 
 ```python
 from qprogram.waveforms import Ramp
@@ -237,7 +220,7 @@ for diagnostic in qp.validate(program, caps)[0]:
 ```
 
 ```text
-[error] qdac.dwell-below-minimum: qdac.play dwell=1 is below min_dwell_us=2; dwell is in microseconds (at body[0])
+[error] qdac.dwell-below-minimum: qdac.play dwell=1 is below the QDAC-II minimum of 2; dwell is in microseconds (at body[0])
 ```
 
 The default `dwell` is 2, the floor itself, so a `play` that leaves it out validates clean:
@@ -349,7 +332,6 @@ body
 | Materialize the profile                       | `qp.CompilerCapabilities.from_profile("qdac-default-v1")`        |
 | Attach it to a bus                            | `qp.BusCapabilities(rt=None, host=qdac_cc)`                      |
 | Fill the platform slot                        | `qp.CompilerCapabilities.from_profile("qprogram-base-v1")`       |
-| Publish a longer dwell floor for one device   | `from_profile("qdac-default-v1", limit_overrides={"min_dwell_us": 5})` |
 | Add a check the profile does not make         | `from_profile("qdac-default-v1", extra_predicates=(my_pred,))`   |
 | Ask whether a token is supported              | `qdac_cc.supports("vendor.qdac.play")`                           |
 | See the plan and the diagnostics              | `qp.explain(program, caps)`, `qp.validate(program, caps)`        |

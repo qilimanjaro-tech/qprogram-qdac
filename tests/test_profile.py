@@ -28,7 +28,8 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
-from qprogram import explain, simulate
+from _header import HEADER, REQUIRE
+from qprogram import Variable, explain, loads, simulate
 from qprogram.protocol import (
     BusCapabilities,
     CompilerCapabilities,
@@ -118,9 +119,13 @@ def test_qdac_default_profile_holds_no_iq_waveform_tokens():
     assert not any(token.startswith("waveform.iq") for token in caps.capabilities)
 
 
-def test_qdac_default_profile_declares_the_dwell_floor_in_microseconds():
-    """The floor is the QDAC-II's 2 μs, in the same unit as ``play``'s ``dwell``."""
-    assert QDAC_DEFAULT_V1.limits == {"min_dwell_us": 2}
+def test_qdac_default_profile_publishes_no_limits():
+    """The dwell floor is enforced by a predicate and not published as a limit.
+
+    A predicate cannot read the slot's limits, so a published floor could be overridden without the
+    check following it. Publishing nothing keeps what the profile says and what it enforces the same.
+    """
+    assert QDAC_DEFAULT_V1.limits == {}
 
 
 def test_qdac_default_vendor_versions_record_qdac():
@@ -204,16 +209,19 @@ def test_non_empty_trigger_outputs_validates_clean():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("dwell", [1, 0, 1.5])
+@pytest.mark.parametrize("dwell", [1, 0, np.int64(1)], ids=["int", "zero", "numpy-int"])
 def test_dwell_below_the_floor_is_rejected(dwell):
+    """A numpy integer is checked like a Python one, so a dwell taken from an array cannot slip past."""
     caps = _make_caps()
     p = QProgram()
     p.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000), dwell=dwell)
     diagnostics = _diagnostics(p, caps)
     assert [(d.severity, d.code) for d in diagnostics] == [("error", "qdac.dwell-below-minimum")]
     assert diagnostics[0].node is _node(p, "Play")
-    assert diagnostics[0].limit == ("min_dwell_us", dwell)
-    assert diagnostics[0].message == (f"qdac.play dwell={dwell} is below min_dwell_us=2; dwell is in microseconds")
+    assert diagnostics[0].limit is None
+    assert diagnostics[0].message == (
+        f"qdac.play dwell={dwell} is below the QDAC-II minimum of 2; dwell is in microseconds"
+    )
 
 
 @pytest.mark.parametrize("kwargs", [{}, {"dwell": 2}, {"dwell": 1000}], ids=["default", "at-floor", "above"])
@@ -225,17 +233,27 @@ def test_dwell_at_or_above_the_floor_validates_clean(kwargs):
     assert _diagnostics(p, caps) == []
 
 
-def test_dwell_read_from_a_variable_is_not_checked_against_the_floor():
-    """A dwell with no static value cannot be compared, so the floor leaves it to the platform.
+def test_dwell_that_is_not_a_number_is_left_to_the_platform():
+    """``dwell`` is typed ``int``, but a hand-written ``.qp`` file can still bind it to a loop variable.
 
-    The sweep that binds it is still lifted host-side, which is the other predicate's job.
+    The check compares numbers only, so it leaves that dwell alone rather than failing on an
+    expression it cannot evaluate. The sweep is still lifted host-side, which is the other
+    predicate's job.
     """
-    caps = _make_caps(rt=True)
-    p = QProgram()
-    v = p.variable("dwell")
-    with p.sweep(v, Range(1, 10, 1)):
-        p.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000), dwell=v)
-    assert [d.code for d in _diagnostics(p, caps)] == ["forced-host"]
+    text = (
+        f"{HEADER}\n"
+        "\n"
+        f"{REQUIRE}\n"
+        "\n"
+        "body:\n"
+        "  var d\n"
+        "\n"
+        "  for d in Range(start=2, stop=10, step=2):\n"
+        '    qdac.play "flux_q0" "flux_ramp" dwell=d\n'
+    )
+    p = loads(text)
+    assert isinstance(_node(p, "Play").dwell, Variable)
+    assert [d.code for d in _diagnostics(p, _make_caps(rt=True))] == ["forced-host"]
 
 
 # ---------------------------------------------------------------------------
