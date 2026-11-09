@@ -64,7 +64,7 @@ class QdacNamespace(VendorNamespace):
     def set_trigger(
         self,
         bus: str,
-        duration: int,
+        duration: float,
         position: TriggerPosition = "start",
         outputs: Iterable[int] = (),
     ) -> None:
@@ -72,7 +72,7 @@ class QdacNamespace(VendorNamespace):
 
         Args:
             bus (str): QDAC channel whose trigger outputs are being configured.
-            duration (int): Trigger-active duration in nanoseconds.
+            duration (float): Trigger-active duration in seconds, ``10e-6`` for 10 μs.
             position (TriggerPosition): Sequence event at which the triggers fire, one of
                 ``"start"``, ``"step"``, ``"end"``, ``"end_step"``. Default ``"start"``.
             outputs (Iterable[int]): Trigger output indices to arm. Any iterable of ints will do:
@@ -103,8 +103,8 @@ class QdacNamespace(VendorNamespace):
         self,
         bus: str,
         waveform: Waveform,
-        dwell: int = 1,
-        delay: int = 0,
+        dwell: int = 2,
+        delay: float = 0.0,
         repetitions: int = 1,
         stepped: bool = False,
     ) -> None:
@@ -115,8 +115,8 @@ class QdacNamespace(VendorNamespace):
             waveform (Waveform): Single-channel [`Waveform`][qprogram.waveforms.Waveform] to emit. A
                 ``str`` alias is accepted here too, to be resolved later by
                 [`with_waveforms`][qprogram.QProgram.with_waveforms].
-            dwell (int): Per-sample dwell time in nanoseconds. Default ``1``.
-            delay (int): Delay before the first sample, in nanoseconds. Default ``0``.
+            dwell (int): Per-sample dwell time in microseconds, at least 2. Default ``2``.
+            delay (float): Delay before the first sample, in seconds. Default ``0.0``.
             repetitions (int): How many times the envelope is emitted. Default ``1``.
             stepped (bool): ``True`` for discrete-step output, ``False`` for continuous
                 interpolated output. Default ``False``.

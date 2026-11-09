@@ -9,8 +9,8 @@ The core DSL knows nothing about any instrument. This package plugs into it thro
 | Operation                     | What it does                                                                                   |
 |-------------------------------|------------------------------------------------------------------------------------------------|
 | `program.qdac.set_offset`     | Hold a DC voltage on a channel until something changes it. The value may be a swept variable.  |
-| `program.qdac.play`           | Upload an envelope to the channel's waveform engine, with dwell, delay, repetitions, stepped.   |
-| `program.qdac.set_trigger`    | Arm chassis trigger outputs to fire at a sequence position, for a given duration.               |
+| `program.qdac.play`           | Upload an envelope to the channel's waveform engine, with dwell (μs), delay (s), repetitions, stepped. |
+| `program.qdac.set_trigger`    | Arm chassis trigger outputs to fire at a sequence position, for a duration in seconds.          |
 | `program.qdac.wait_trigger`   | Halt the channel's sequencer until an external trigger arrives on an input port.                |
 
 Two facts about the instrument are declared in the profile rather than left in a comment. The QDAC has **no FPGA**, so a swept parameter is re-uploaded from the host between iterations, and `qdac-default-v1` puts the enclosing loop host-side. A QDAC channel is **single-channel**, so the profile carries no IQ waveform tokens at all: an IQ pulse on a QDAC bus is a `missing-capability` error from `qp.validate`.
@@ -28,7 +28,7 @@ flux = schema.q[0].flux
 
 program = QProgram(label="flux-ramp", schema=schema)
 program.qdac.set_offset(flux, 0.42)
-program.qdac.set_trigger(flux, duration=50, position="start", outputs={1, 2})
+program.qdac.set_trigger(flux, duration=10e-6, position="start", outputs={1, 2})
 program.qdac.play(flux, Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=1000), dwell=100)
 program.qdac.wait_trigger(flux, port=3)
 
@@ -53,7 +53,7 @@ schema:
 
 body:
   qdac.set_offset q[0].flux 0.42
-  qdac.set_trigger q[0].flux 50 outputs=[1, 2]
+  qdac.set_trigger q[0].flux 1e-05 outputs=[1, 2]
   qdac.play q[0].flux Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=1000) dwell=100
   qdac.wait_trigger q[0].flux 3
 ```
@@ -74,4 +74,4 @@ The `require qdac 0.2` line is the whole compatibility story. `qp.load` checks i
 
 ## Status
 
-The vendor protocol version is this package's own version, and `.qp` files carry it as `require qdac <major>.<minor>`. A file loads against any installed `qprogram-qdac` at that version or above: when a release changes an operation's wire form it registers a migration for it, and the older spelling is rewritten on the way in. A file asking for more than the installed package provides is a `ParseError` rather than a partial load. The Python API is pre-1.0 and allowed to move; the wire form is the steadier of the two.
+The vendor protocol version is this package's own version, and `.qp` files carry it as `require qdac <major>.<minor>`. A file loads against any installed `qprogram-qdac` at that version or above: when a release changes an operation's wire form it registers a migration for it, and the older spelling is rewritten on the way in. The one exception is 0.3, which moved `play`'s `dwell` from nanoseconds to microseconds, and `play`'s `delay` and `set_trigger`'s `duration` from nanoseconds to seconds, with no migration: a file written for 0.1 or 0.2 loads with its numbers read in the new units. A file asking for more than the installed package provides is a `ParseError` rather than a partial load. The Python API is pre-1.0 and allowed to move; the wire form is the steadier of the two.

@@ -13,14 +13,14 @@ import qprogram as qp
 from qprogram_qdac.profiles import QDAC_DEFAULT_V1
 
 QDAC_DEFAULT_V1.name  # 'qdac-default-v1'
-QDAC_DEFAULT_V1.version  # (0, 1, 0)
+QDAC_DEFAULT_V1.version  # (0, 2, 0)
 QDAC_DEFAULT_V1.extends  # None
-QDAC_DEFAULT_V1.limits  # {'min_dwell_ns': 100}
-QDAC_DEFAULT_V1.vendor_versions  # {'qdac': (0, 1, 0)}
+QDAC_DEFAULT_V1.limits  # {}
+QDAC_DEFAULT_V1.vendor_versions  # {'qdac': (0, 3, 0)}
 len(QDAC_DEFAULT_V1.capabilities)  # 16
 ```
 
-`extends` is `None`: the profile declares its own token set rather than inheriting one. `vendor_versions` records which qdac extension version the profile was written against, mirroring a `.qp` file's `require qdac 0.1` line.
+`extends` is `None`: the profile declares its own token set rather than inheriting one. `vendor_versions` records which qdac extension version the profile was written against, mirroring a `.qp` file's `require qdac 0.3` line.
 
 Materialize it into a descriptor the same way as any other profile:
 
@@ -108,45 +108,19 @@ The `expr.*` half of that set is checked against the platform slot, which the co
 
 ## Limits
 
-One limit, and the core validator does not check it:
+The profile publishes no limits. The QDAC-II's 2 μs dwell floor is enforced by a predicate instead, described [below](#a-dwell-below-the-floor-is-an-error). A predicate sees the node it checks and never the slot's limits, so a floor published as a limit could be moved with `limit_overrides` while the check stayed at 2 μs. Leaving it out keeps what the profile publishes and what it enforces the same.
 
-| Limit          | Value | Meaning                                              |
-|----------------|-------|------------------------------------------------------|
-| `min_dwell_ns` | `100` | Floor on `play`'s `dwell`, below which the waveform engine's output interpolation breaks down. |
-
-The validator reads four limit keys (`max_loop_nesting`, `max_parallel_loops`, `max_measurements`, `min_wait_duration_ns`) and ignores every other key, so `min_dwell_ns` is carried for platforms that enforce it themselves, either in their compiler or through a predicate of their own. A `dwell` under the floor validates clean:
-
-```python
-from qprogram.waveforms import Ramp
-
-program = QProgram(label="fast-dwell")
-program.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000), dwell=1)
-
-qp.validate(program, caps)[0]  # []
-```
-
-A device that knows its own floor tightens the value without republishing the profile:
-
-```python
-tight = qp.CompilerCapabilities.from_profile(
-    "qdac-default-v1",
-    limit_overrides={"min_dwell_ns": 200},
-)
-
-tight.limits  # {'min_dwell_ns': 200}
-```
-
-`from_profile` also takes `extra_predicates=(...)`, which is where a platform adds its own `min_dwell_ns` check.
+A device whose floor is longer than 2 μs passes a check of its own in `from_profile`'s `extra_predicates=(...)`. [The dwell floor](../developer/lowering.md#the-dwell-floor) in the developer guide has one written out.
 
 ## Predicates
 
-The profile ships two predicates. They run against every visited node, and both filter on node type first, so a program with no qdac operations is unaffected.
+The profile ships three predicates. They run against every visited node, and each filters on node type first, so a program with no qdac operations is unaffected.
 
 ```python
-len(QDAC_DEFAULT_V1.predicates)  # 2
+len(QDAC_DEFAULT_V1.predicates)  # 3
 ```
 
-One reclassifies, one rejects. A qdac operation that reads a loop-bound variable pushes the loop that binds it host-side, which the core classifier reports as a `forced-host` warning; a `set_trigger` that arms no outputs is a hard `qdac.empty-trigger-outputs` error. The two subsections below give the exact firing condition and the message for each.
+One reclassifies, two reject. A qdac operation that reads a loop-bound variable pushes the loop that binds it host-side, which the core classifier reports as a `forced-host` warning. A `set_trigger` that arms no outputs is a hard `qdac.empty-trigger-outputs` error, and a `play` whose dwell is under 2 μs is a hard `qdac.dwell-below-minimum` error. The three subsections below give the exact firing condition and the message for each.
 
 ### Swept variables force the loop host-side
 
@@ -206,7 +180,7 @@ The diagnostic code is `forced-host` at `severity="warning"`, and it comes from 
 
 ```python
 program = QProgram(label="trigger-mistake")
-program.qdac.set_trigger("flux_q0", 50, position="step")
+program.qdac.set_trigger("flux_q0", 10e-6, position="step")
 
 for diagnostic in qp.validate(program, caps)[0]:
     print(diagnostic)
@@ -217,14 +191,43 @@ print(qp.explain(program, caps))
 [error] qdac.empty-trigger-outputs: SetTrigger has no outputs configured. Specify at least one output index, e.g. outputs={1} or outputs=[1, 2]. (at body[0])
 plan for 'trigger-mistake' — errors: 1 · warnings: 0 · info: 0
 body
-└─ qdac.set_trigger "flux_q0" 50 position="step"  [--]       !! qdac.empty-trigger-outputs: SetTrigger has no outputs configured. Specify at least one output index, e.g. outputs={1} or outputs=[1, 2].
+└─ qdac.set_trigger "flux_q0" 1e-05 position="step"  [--]       !! qdac.empty-trigger-outputs: SetTrigger has no outputs configured. Specify at least one output index, e.g. outputs={1} or outputs=[1, 2].
 ```
 
 Naming at least one output clears it:
 
 ```python
 program = QProgram(label="trigger-ok")
-program.qdac.set_trigger("flux_q0", 50, position="step", outputs={1})
+program.qdac.set_trigger("flux_q0", 10e-6, position="step", outputs={1})
+
+qp.validate(program, caps)[0]  # []
+```
+
+### A dwell below the floor is an error
+
+**Fires when** the visited node is a `Play` whose `dwell` is a number under 2. The QDAC-II holds each sample for at least 2 μs, so a shorter dwell is one the engine cannot run. The check compares numbers only: `dwell` is typed `int`, but a hand-written `.qp` file can bind it to a loop variable, and that dwell is left to the platform.
+
+**Yields** a hard `Diagnostic`, `severity="error"`, code `qdac.dwell-below-minimum`:
+
+```python
+from qprogram.waveforms import Ramp
+
+program = QProgram(label="fast-dwell")
+program.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000), dwell=1)
+
+for diagnostic in qp.validate(program, caps)[0]:
+    print(diagnostic)
+```
+
+```text
+[error] qdac.dwell-below-minimum: qdac.play dwell=1 is below the QDAC-II minimum of 2; dwell is in microseconds (at body[0])
+```
+
+The default `dwell` is 2, the floor itself, so a `play` that leaves it out validates clean:
+
+```python
+program = QProgram(label="default-dwell")
+program.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000))
 
 qp.validate(program, caps)[0]  # []
 ```
@@ -329,7 +332,6 @@ body
 | Materialize the profile                       | `qp.CompilerCapabilities.from_profile("qdac-default-v1")`        |
 | Attach it to a bus                            | `qp.BusCapabilities(rt=None, host=qdac_cc)`                      |
 | Fill the platform slot                        | `qp.CompilerCapabilities.from_profile("qprogram-base-v1")`       |
-| Tighten the dwell floor for one device        | `from_profile("qdac-default-v1", limit_overrides={"min_dwell_ns": 200})` |
 | Add a check the profile does not make         | `from_profile("qdac-default-v1", extra_predicates=(my_pred,))`   |
 | Ask whether a token is supported              | `qdac_cc.supports("vendor.qdac.play")`                           |
 | See the plan and the diagnostics              | `qp.explain(program, caps)`, `qp.validate(program, caps)`        |
@@ -339,6 +341,7 @@ body
 | Code                          | Severity  | Source                          |
 |-------------------------------|-----------|---------------------------------|
 | `qdac.empty-trigger-outputs`  | `error`   | This package's profile.          |
+| `qdac.dwell-below-minimum`    | `error`   | This package's profile.          |
 | `forced-host`                 | `warning` | Core, from this package's `DomainConstraint`. |
 | `missing-capability`          | `error`   | Core, when a token is absent from the routed slot. |
 | `mixed-domain`                | `error`   | Core, on a block with conflicting operation-children. |

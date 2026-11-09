@@ -78,7 +78,7 @@ All five code edits are listed in [Adding an operation](lowering.md#adding-an-op
 | **Docs**          | The operation's row and section in the user guide, its wire form in the serialization page, and anything the platform must know in [Lowering onto hardware](lowering.md). |
 | **API reference** | The class and the namespace method added to the `members:` lists in `docs/reference/api.md`.                                       |
 
-Adding an operation is a minor version bump of the package, which is also the vendor protocol version in the `require qdac <major>.<minor>` header. Removing or renaming one, or changing what it means on the wire, is a major bump — and it needs a [migration](lowering.md#changing-one-that-already-exists) registered with `qp.register_vendor_migration("qdac", ...)` under the version that ships it, so the files users already have keep loading.
+Adding an operation is a minor version bump of the package, which is also the vendor protocol version in the `require qdac <major>.<minor>` header. Removing or renaming one, or changing what it means on the wire, is a major bump, and it needs a [migration](lowering.md#changing-one-that-already-exists) registered with `qp.register_vendor_migration("qdac", ...)` under the version that ships it, so the files users already have keep loading. The one exception is 0.3, which gave `play`'s `dwell` and `delay` and `set_trigger`'s `duration` new units in a minor release with no migration, because the package had no users yet.
 
 ## Style notes
 

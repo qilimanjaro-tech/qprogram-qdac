@@ -57,7 +57,7 @@ The AST nodes the namespace appends. They are data plus introspection: typed att
 
 ## Capability profile
 
-The bundle a platform attaches to every qdac-driven bus: the four vendor tokens, the single-channel waveforms the engine can render, the one waveform-engine limit, and the two predicates that turn a swept parameter into a host-side loop and an empty trigger-output set into an error.
+The bundle a platform attaches to every qdac-driven bus: the four vendor tokens, the single-channel waveforms the engine can render, and the three predicates that turn a swept parameter into a host-side loop, and an empty trigger-output set or a dwell under 2 μs into an error.
 
 ::: qprogram_qdac.QDAC_DEFAULT_V1
     options:

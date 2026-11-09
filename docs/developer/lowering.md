@@ -11,7 +11,7 @@ Nothing in `qprogram-qdac` touches an instrument. The package builds typed AST n
 | `operations.py` | The four AST node classes, the `TriggerPosition` literal, and each node's `required_capabilities()`.                    |
 | `namespace.py`  | `QdacNamespace`: the typed `program.qdac.*` methods that build a node and append it to the program's active block.      |
 | `mixin.py`      | `QdacMixin`: the typed `.qdac` property, for editors and type-checkers.                                                 |
-| `profiles.py`   | The vendor capability tokens, the two predicates, and the `qdac-default-v1` profile.                                    |
+| `profiles.py`   | The vendor capability tokens, the three predicates, and the `qdac-default-v1` profile.                                  |
 | `__init__.py`   | The registration calls, the protocol version, and `QProgram` pre-combined with the mixin.                               |
 
 The dependency direction is one way. Every module imports from `qprogram`; `qprogram` imports nothing from here.
@@ -45,7 +45,7 @@ print(qp.dumps(program).splitlines()[2])
 ```
 QProgram QdacNamespace
 0.2.0
-(0, 1, 0)
+(0, 2, 0)
 require qdac 0.2
 ```
 
@@ -83,8 +83,8 @@ Not done for you: no clamping to the channel's output range, no conversion to DA
 ### `qdac.play`
 
 ```
-Play(bus, waveform, dwell=1, delay=0, repetitions=1, stepped=False)
-qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=1000) dwell=200
+Play(bus, waveform, dwell=2, delay=0.0, repetitions=1, stepped=False)
+qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=1000) dwell=10
 ```
 
 Upload an envelope to the channel's waveform engine and run it. Sample the envelope with `waveform.envelope(resolution=1)`, which returns one sample per nanosecond of `waveform.get_duration()`, then program the engine with `dwell`, `delay`, `repetitions`, and `stepped`.
@@ -93,16 +93,16 @@ The four engine arguments are pass-through values:
 
 | Argument      | Meaning                                                     |
 |---------------|-------------------------------------------------------------|
-| `dwell`       | How long the engine holds each sample, in nanoseconds.       |
-| `delay`       | Nanoseconds between the sequence start and the first sample. |
+| `dwell`       | How long the engine holds each sample, in microseconds. An integer, at least 2. |
+| `delay`       | Seconds between the sequence start and the first sample.     |
 | `repetitions` | How many times the engine repeats the envelope.              |
 | `stepped`     | Discrete steps when `True`, interpolated output when `False`.|
 
 Four things the DSL deliberately does not do:
 
-- **`dwell` is not reconciled with the envelope's own duration.** The envelope is a list of samples; `dwell` is how long each one is held. `Ramp(0.0, 1.0, 1000)` is 1000 samples, so at `dwell=200` the sequence lasts 200 µs, two hundred times the waveform's nominal 1000 ns. Nothing warns about that. Decide whether you resample the envelope down to the point count your engine can store, or reject the pair.
+- **`dwell` is not reconciled with the envelope's own duration.** The envelope is a list of samples; `dwell` is how long each one is held. `Ramp(0.0, 1.0, 1000)` is 1000 samples, so at `dwell=10` the sequence lasts 10 ms, ten thousand times the waveform's nominal 1000 ns. Nothing warns about that. Decide whether you resample the envelope down to the point count your engine can store, or reject the pair.
 - **Amplitude is dimensionless.** An envelope sample is whatever the waveform's amplitude arguments say, so `Ramp(0.0, 1.0, 1000)` peaks at `1.0`. Mapping that onto full-scale volts, and applying any per-channel gain, is the platform's job.
-- **No granularity or floor checks.** `dwell` and `delay` are nanosecond integers, never rounded to the engine's clock granularity and never checked against the profile's `min_dwell_ns` (see [Limits](#limits-are-declared-not-enforced)). `repetitions` is not checked against the engine's memory depth or against any total-duration budget.
+- **No granularity checks.** `dwell` is a whole number of microseconds and `delay` a float in seconds, and neither is rounded to the engine's clock granularity. The one check on either is the 2 μs floor on `dwell` (see [The dwell floor](#the-dwell-floor)). `repetitions` is not checked against the engine's memory depth or against any total-duration budget.
 - **The waveform's channel kind is not enforced at build time.** `Play` always reports `waveform.single` alongside the per-class token, so the token set alone does not prove the envelope is real-valued. An IQ waveform reaches the node, and validation catches it only because its per-class token is missing from the profile:
 
 ```python
@@ -167,10 +167,10 @@ Both transforms work on QDAC nodes for the same reason: `Play` declares `WAVEFOR
 
 ```
 SetTrigger(bus, duration, position="start", outputs=())
-qdac.set_trigger "flux_q0" 20 position="step" outputs=[1, 2]
+qdac.set_trigger "flux_q0" 2e-05 position="step" outputs=[1, 2]
 ```
 
-Arm chassis trigger outputs to fire at a sequence event. The platform routes each index in `outputs` on the internal trigger bus and holds it active for `duration` nanoseconds.
+Arm chassis trigger outputs to fire at a sequence event. The platform routes each index in `outputs` on the internal trigger bus and holds it active for `duration` seconds.
 
 | `position`   | The engine fires                            |
 |--------------|---------------------------------------------|
@@ -199,14 +199,14 @@ Not done for you: there is no timeout, no bounds check on the port, and no deadl
 | Attribute             | Unit                   | What the DSL checks                     |
 |-----------------------|------------------------|-----------------------------------------|
 | `SetOffset.offset`    | volts                  | nothing                                 |
-| `Play.dwell`          | nanoseconds per sample | nothing                                 |
-| `Play.delay`          | nanoseconds            | nothing                                 |
+| `Play.dwell`          | microseconds per sample | at least 2                             |
+| `Play.delay`          | seconds                | nothing                                 |
 | `Play.repetitions`    | count                  | nothing                                 |
-| `SetTrigger.duration` | nanoseconds            | nothing                                 |
+| `SetTrigger.duration` | seconds                | nothing                                 |
 | `SetTrigger.outputs`  | chassis output index    | sorted and deduplicated; empty rejected |
 | `WaitTrigger.port`    | chassis input index     | nothing                                 |
 
-Carrying the numbers unchanged is the point. Every conversion, clamp, and rounding decision belongs to the platform, where the chassis model, the wiring, and the calibration live.
+Carrying the numbers unchanged is the point. Every conversion, clamp, and rounding decision belongs to the platform, where the chassis model, the wiring, and the calibration live. The QDAC-II's own commands take seconds, so `delay` and `duration` reach them as written and `dwell` is the one value to scale, by `1e-6`.
 
 ## Swept arguments evaluate per iteration
 
@@ -312,7 +312,7 @@ When the same experiment also drives a real-time instrument, the QDAC sweep is t
 
 ## What the profile constrains
 
-`qdac-default-v1` ships two predicates. Both are plain callables `(node, ctx) -> Iterable[Diagnostic | DomainConstraint]`, run on every visited node in the slot they belong to, and both filter by node type first.
+`qdac-default-v1` ships three predicates. Each is a plain callable `(node, ctx) -> Iterable[Diagnostic | DomainConstraint]`, run on every visited node in the slot it belongs to, and each filters by node type first.
 
 **A QDAC operation with a swept variable forces its loop host-side.** For each loop-bound variable the node references, the predicate yields a `DomainConstraint` excluding `"rt"` on that variable's **binding loop**, found with `ctx.binding_loop_of(var)`. The reason names the operation and the variable. Two rules matter here. A constraint must target a `Block`: pointing one at the operation is reported as `bad-domain-constraint`. And a constraint is soft, meaning "this domain cannot, another one can", which is the difference between it and a `Diagnostic`.
 
@@ -356,13 +356,17 @@ Note the operation still reads `[rt|host]` while the loop reads `[host]`. That i
 
 **An empty `outputs` on `set_trigger` is an error.** Arming zero outputs configures a trigger that fires onto nothing, and no domain makes that work, so the predicate yields a `Diagnostic` with `severity="error"` and code `qdac.empty-trigger-outputs`.
 
+**A `dwell` under 2 μs is an error.** The QDAC-II holds each sample for at least 2 μs, so the predicate yields a `Diagnostic` with `severity="error"` and code `qdac.dwell-below-minimum` for a `Play` whose numeric `dwell` is under 2. [The dwell floor](#the-dwell-floor) below has the details.
+
 A platform reacts to diagnostics by severity, and the convention across the project is: raise `UnsupportedOperationError` on any `error`, surface a `warning` without raising, and pass `info` through as advisory. `validate` never raises on its own.
 
-Site-specific rules do not belong in the vendor profile. Pass them as `extra_predicates` when you materialize the slot, which is also how the limit below gets enforced.
+Site-specific rules do not belong in the vendor profile. Pass them as `extra_predicates` when you materialize the slot, which is also how a device with a longer dwell floor enforces it, below.
 
-## Limits are declared, not enforced
+## The dwell floor
 
-`qdac-default-v1` declares one limit:
+The QDAC-II command reference puts the floor of `LIST:DWELl` at 2 μs, and the `qdac.dwell-below-minimum` predicate rejects a `Play` whose `dwell` is shorter. The check compares numbers only, numpy scalars included. `dwell` is typed `int`, but a hand-written `.qp` file can bind it to a loop variable, and a `dwell` that is not a number is left to you.
+
+The floor is not one of the profile's limits, which are empty:
 
 ```python
 from qprogram_qdac import QDAC_DEFAULT_V1
@@ -371,15 +375,14 @@ print(dict(QDAC_DEFAULT_V1.limits))
 ```
 
 ```
-{'min_dwell_ns': 100}
+{}
 ```
 
-Below that dwell the waveform engine's output interpolation breaks down. The core validator enforces `max_loop_nesting`, `max_parallel_loops`, and `max_measurements` at the platform slot, and `min_wait_duration_ns` at the bus slot. Every other key, `min_dwell_ns` included, is carried and ignored. So the number is published for tooling and for platforms to read; no `Play` is checked against it.
-
-A platform that wants the check adds its own predicate. `ValidationContext` exposes program-wide data-flow facts, not the slot's limits, so close over the floor you want enforced:
+A predicate sees the node and the `ValidationContext`, which exposes program-wide data-flow facts and not the slot's limits. A floor published as a limit could therefore be moved with `limit_overrides` while the check stayed at 2 μs, so the profile keeps it as a constant inside the predicate. A device with a longer floor adds its own predicate, closing over the floor it wants enforced:
 
 ```python
 from collections.abc import Iterable
+from numbers import Real
 
 import qprogram as qp
 from qprogram.protocol import (
@@ -390,32 +393,30 @@ from qprogram.protocol import (
     PlatformCapabilities,
     Predicate,
     ValidationContext,
-    resolve_profile,
 )
 from qprogram.waveforms import Ramp
 from qprogram_qdac import QProgram
 from qprogram_qdac.operations import Play
 
 
-def dwell_floor(min_dwell_ns: float) -> Predicate:
-    """Return a predicate rejecting a qdac.play whose dwell is below min_dwell_ns."""
+def device_dwell_floor(min_dwell_us: float) -> Predicate:
+    """Return a predicate rejecting a qdac.play whose dwell is below this device's floor."""
 
     def check(node: object, ctx: ValidationContext) -> Iterable[Diagnostic | DomainConstraint]:
-        if isinstance(node, Play) and node.dwell < min_dwell_ns:
+        if isinstance(node, Play) and isinstance(node.dwell, Real) and node.dwell < min_dwell_us:
             yield Diagnostic(
                 severity="error",
-                code="qdac.dwell-below-minimum",
-                message=f"qdac.play dwell={node.dwell} ns is below min_dwell_ns={min_dwell_ns:g}",
+                code="site.dwell-below-minimum",
+                message=f"qdac.play dwell={node.dwell} is below this device's {min_dwell_us:g} us floor",
                 node=node,
             )
 
     return check
 
 
-floor = resolve_profile("qdac-default-v1").limits["min_dwell_ns"]
 qdac_caps = CompilerCapabilities.from_profile(
     "qdac-default-v1",
-    extra_predicates=(dwell_floor(floor),),
+    extra_predicates=(device_dwell_floor(5),),
 )
 platform_caps = CompilerCapabilities.from_profile("qprogram-base-v1")
 caps = PlatformCapabilities(
@@ -425,17 +426,20 @@ caps = PlatformCapabilities(
 )
 
 program = QProgram()
-program.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000), dwell=10)
+program.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000), dwell=3)
+program.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000), dwell=1)
 
 for diagnostic in qp.validate(program, caps)[0]:
     print(diagnostic.severity, diagnostic.code, diagnostic.message)
 ```
 
 ```
-error qdac.dwell-below-minimum qdac.play dwell=10 ns is below min_dwell_ns=100
+error site.dwell-below-minimum qdac.play dwell=3 is below this device's 5 us floor
+error qdac.dwell-below-minimum qdac.play dwell=1 is below the QDAC-II minimum of 2; dwell is in microseconds
+error site.dwell-below-minimum qdac.play dwell=1 is below this device's 5 us floor
 ```
 
-A device with a tighter floor passes `limit_overrides={"min_dwell_ns": 250}`, so the published number stays truthful, and `dwell_floor(250)`, so the check follows it.
+A dwell under 2 μs fails both checks, the profile's and the device's.
 
 ## Adding an operation
 
@@ -556,9 +560,9 @@ Each new operation earns one test per module in `tests/`:
 
 ### Changing one that already exists
 
-Renaming an operation, renaming or reordering a constructor parameter, or giving an argument a new meaning breaks every file that already uses it. That is a major bump of the vendor protocol, and the release that does it registers a rewrite so that the files users already have go on loading.
+Renaming an operation, renaming or reordering a constructor parameter, or giving an argument a new meaning breaks every file that already uses it. That is a major bump of the vendor protocol, and the release that does it registers a rewrite so that the files users already have go on loading. The one exception is 0.3, which gave `play`'s `dwell` and `delay` and `set_trigger`'s `duration` new units in a minor release with no rewrite, because the package had no users yet.
 
-Say 1.0 makes `dwell` required on `qdac.play`, where it had been optional with a default of `1`. A file written against 0.3 leaves it out, so the parser would hand `Play.__init__` one argument short:
+Say 1.0 makes `dwell` required on `qdac.play`, where it had been optional with a default of `2`. A file written against 0.3 leaves it out, so the parser would hand `Play.__init__` one argument short:
 
 <!-- check: skip -->
 ```
@@ -584,7 +588,7 @@ _PLAY = re.compile(r"^\s*qdac\.play\b.*$")
 @register_vendor_migration("qdac", "1.0")
 def _play_took_a_dwell(lines: list[str]) -> list[str]:
     """Give a pre-1.0 play line the dwell that release made required."""
-    return [_PLAY.sub(r"\g<0> dwell=1", line) for line in lines]
+    return [_PLAY.sub(r"\g<0> dwell=2", line) for line in lines]
 ```
 
 The pattern matches the operation keyword and `\g<0>` appends to the whole line, rather than trying to pick the argument list apart: a waveform constructor carries commas and spaces of its own, and a swept argument carries parentheses. The value appended is the default that release removed, so a file that never said `dwell` keeps the behavior it had, and the parser binds the keyword by name like any other.
@@ -601,7 +605,7 @@ Four rules govern the rewrite:
 ```python
 def test_a_0_3_file_gets_the_dwell_1_0_made_required():
     text = '#!QProgram 0.2\n\nrequire qdac 0.3\n\nbody:\n  qdac.play "flux_q0" "ramp_up"\n'
-    assert qp.loads(text).body.elements[0].dwell == 1
+    assert qp.loads(text).body.elements[0].dwell == 2
 ```
 
 A vendor rewrite only ever sees `.qp` lines. A `.wfl` waveform library carries no `require` line and so claims no vendor version, which leaves its own versioning to the core, whose [serialization internals](https://qilimanjaro-tech.github.io/qprogram/developer/serialization-internals.html#vendor-migrations) document the mechanism these calls reach into.

@@ -18,7 +18,7 @@ supports on one bus (one channel). A qdac platform attaches it to the flux buses
 readout buses to another vendor, qblox for instance. The platform-level slot is filled by the core-shipped
 ``qprogram-base-v1``, the same as for any other vendor.
 
-The profile carries two predicates:
+The profile carries three predicates:
 
 - A soft [`DomainConstraint`][qprogram.DomainConstraint] excluding ``"rt"``, emitted whenever a qdac operation
   reads a loop-bound [`Variable`][qprogram.Variable]. QDAC has no FPGA, so every swept parameter (a DC
@@ -28,12 +28,15 @@ The profile carries two predicates:
   outside the qdac operation is left alone.
 - A hard ``qdac.empty-trigger-outputs`` error [`Diagnostic`][qprogram.Diagnostic] for a
   [`SetTrigger`][qprogram_qdac.SetTrigger] that arms no output.
+- A hard ``qdac.dwell-below-minimum`` error [`Diagnostic`][qprogram.Diagnostic] for a
+  [`Play`][qprogram_qdac.Play] whose dwell is shorter than the QDAC-II's 2 μs.
 
 Registered as a side effect of importing `qprogram_qdac`.
 """
 
 from __future__ import annotations
 
+from numbers import Real
 from typing import TYPE_CHECKING
 
 from qprogram.protocol import (
@@ -154,6 +157,55 @@ def _set_trigger_outputs_required(
         )
 
 
+_MIN_DWELL_US = 2
+"""The shortest dwell the QDAC-II waveform engine runs, in microseconds.
+
+The QDAC-II command reference puts the floor of ``LIST:DWELl`` at 2 μs, and
+`_play_dwell_at_least_minimum` checks against it. The profile does not publish it as a limit: a
+predicate cannot read the slot's limits, so a published floor could be overridden with
+``limit_overrides`` without the check following it.
+"""
+
+
+def _play_dwell_at_least_minimum(
+    node: Operation | Block,
+    ctx: ValidationContext,  # ruff: ignore[unused-function-argument]  a purely structural check
+) -> Iterable[Diagnostic | DomainConstraint]:
+    """Reject a [`Play`][qprogram_qdac.Play] whose dwell is shorter than the engine's 2 μs floor.
+
+    No domain runs a dwell the hardware does not accept, so a short one is a
+    [`Diagnostic`][qprogram.Diagnostic] and not a [`DomainConstraint`][qprogram.DomainConstraint].
+
+    The floor is a module constant rather than a published limit, since a predicate sees the node and
+    the validation context but not the slot's limits. A device with a longer floor adds a predicate of
+    its own.
+
+    The check compares real numbers, numpy scalars included. ``dwell`` is typed ``int``, but a
+    hand-written ``.qp`` file can still bind it to a loop variable; anything that is not a number is
+    left to the platform rather than compared.
+
+    Args:
+        node (Operation | Block): The AST node currently being checked.
+        ctx (ValidationContext): Validation context. Unused: the check reads only the node.
+
+    Yields:
+        One ``qdac.dwell-below-minimum`` error [`Diagnostic`][qprogram.Diagnostic] when ``node`` is a
+        ``Play`` whose numeric dwell is under 2 μs. Nothing otherwise.
+    """
+    if not isinstance(node, Play) or not isinstance(node.dwell, Real):
+        return
+    if node.dwell < _MIN_DWELL_US:
+        yield Diagnostic(
+            severity="error",
+            code="qdac.dwell-below-minimum",
+            message=(
+                f"qdac.play dwell={node.dwell} is below the QDAC-II minimum of {_MIN_DWELL_US}; "
+                "dwell is in microseconds"
+            ),
+            node=node,
+        )
+
+
 _BUS_OPS: frozenset[str] = frozenset(
     {
         "vendor.qdac.wait_trigger",
@@ -196,20 +248,16 @@ a program playing an [`IQDrag`][qprogram.waveforms.IQDrag] on a qdac bus fails v
 
 QDAC_DEFAULT_V1 = Profile(
     name="qdac-default-v1",
-    version=(0, 1, 0),
+    version=(0, 2, 0),
     extends=None,
     capabilities=_BUS_OPS | _WAVEFORMS,
-    limits={
-        # The waveform engine has a hard floor on dwell time, below which its output interpolation
-        # breaks down. No core check reads this limit; it is published here for platforms that wire
-        # in a predicate of their own.
-        "min_dwell_ns": 100,
-    },
+    # No limits: a predicate cannot read them, so the dwell floor is the _MIN_DWELL_US constant instead.
     predicates=(
         _qdac_op_with_swept_var_is_host_only,
         _set_trigger_outputs_required,
+        _play_dwell_at_least_minimum,
     ),
-    vendor_versions={"qdac": (0, 1, 0)},
+    vendor_versions={"qdac": (0, 3, 0)},
 )
 """The default QDAC bus-level capability profile.
 

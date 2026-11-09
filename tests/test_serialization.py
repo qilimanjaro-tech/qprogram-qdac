@@ -70,7 +70,7 @@ def test_wait_trigger_round_trip():
 def test_set_trigger_minimal_round_trip():
     """Arguments left at their default are omitted from the line and rebuilt by the parser."""
     p = QdacQProgram()
-    p.qdac.set_trigger("flux_q0", duration=50)
+    p.qdac.set_trigger("flux_q0", duration=10e-6)
     text = dumps(p)
     assert "qdac.set_trigger" in text
     assert "outputs" not in text
@@ -82,10 +82,29 @@ def test_set_trigger_minimal_round_trip():
     assert op.position == "start"
 
 
+def test_set_trigger_duration_is_written_in_seconds():
+    """The duration is a float in seconds on the wire, written the way Python prints the float."""
+    p = QdacQProgram()
+    p.qdac.set_trigger("flux_q0", 10e-6, outputs=[1])
+    text = dumps(p)
+    assert 'qdac.set_trigger "flux_q0" 1e-05 outputs=[1]' in text
+    assert loads(text).body.elements[0].duration == pytest.approx(10e-6)
+
+
+def test_play_timing_is_written_in_microseconds_and_seconds():
+    """``dwell`` stays an integer number of microseconds; ``delay`` is a float in seconds."""
+    p = QdacQProgram()
+    p.qdac.play("flux_q0", "flux_ramp", dwell=5, delay=1e-3)
+    text = dumps(p)
+    assert 'qdac.play "flux_q0" "flux_ramp" dwell=5 delay=0.001' in text
+    op = loads(text).body.elements[0]
+    assert (op.dwell, op.delay) == (5, pytest.approx(1e-3))
+
+
 def test_set_trigger_with_outputs_round_trip():
     """``outputs`` travels as a bracket literal, already sorted and deduplicated."""
     p = QdacQProgram()
-    p.qdac.set_trigger("flux_q0", 50, outputs={3, 1, 2})
+    p.qdac.set_trigger("flux_q0", 10e-6, outputs={3, 1, 2})
     text = dumps(p)
     assert "outputs=[1, 2, 3]" in text
     reloaded = loads(text)
@@ -96,7 +115,7 @@ def test_set_trigger_with_outputs_round_trip():
 @pytest.mark.parametrize("position", ["step", "end", "end_step"])
 def test_set_trigger_non_default_position_round_trip(position):
     p = QdacQProgram()
-    p.qdac.set_trigger("flux_q0", 50, position=position, outputs=[1])
+    p.qdac.set_trigger("flux_q0", 10e-6, position=position, outputs=[1])
     text = dumps(p)
     assert f'position="{position}"' in text
     reloaded = loads(text)
@@ -128,7 +147,7 @@ def test_set_offset_with_variable_round_trip():
 
 def test_play_round_trip():
     p = QdacQProgram()
-    p.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000), dwell=10, delay=5, repetitions=2, stepped=True)
+    p.qdac.play("flux_q0", Ramp(0.0, 1.0, 1000), dwell=10, delay=1e-3, repetitions=2, stepped=True)
     text = dumps(p)
     assert "qdac.play" in text
     reloaded = loads(text)
@@ -136,7 +155,7 @@ def test_play_round_trip():
     assert isinstance(op, Play)
     assert op.bus == "flux_q0"
     assert op.dwell == 10
-    assert op.delay == 5
+    assert op.delay == pytest.approx(1e-3)
     assert op.repetitions == 2
     assert op.stepped is True
 
@@ -151,7 +170,7 @@ def test_play_default_args_round_trip():
     op = reloaded.body.elements[0]
     assert isinstance(op, Play)
     assert op.bus == "flux_q0"
-    assert op.dwell == 1
+    assert op.dwell == 2
     assert op.delay == 0
     assert op.repetitions == 1
     assert op.stepped is False
@@ -171,14 +190,14 @@ def test_loads_hand_written_file():
         "\n"
         "body:\n"
         '  qdac.set_offset "flux_q0" 0.42\n'
-        '  qdac.set_trigger "flux_q0" 20 position="step" outputs=[1, 2]\n'
+        '  qdac.set_trigger "flux_q0" 2e-05 position="step" outputs=[1, 2]\n'
         '  qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=100) dwell=10 stepped=true\n'
         '  qdac.wait_trigger "flux_q0" 3\n'
     )
     p = loads(text)
     offset, trigger, play, wait_trigger = p.body.elements
     assert offset.offset == pytest.approx(0.42)
-    assert (trigger.duration, trigger.position, trigger.outputs) == (20, "step", (1, 2))
+    assert (trigger.duration, trigger.position, trigger.outputs) == (pytest.approx(20e-6), "step", (1, 2))
     assert (play.dwell, play.stepped) == (10, True)
     assert wait_trigger.port == 3
     assert dumps(p) == text
@@ -243,7 +262,7 @@ def test_full_features_round_trip(flux_tunable_schema):
         p.qdac.set_offset(flux_tunable_schema.q[0].flux, v)
         p.qdac.set_trigger(
             flux_tunable_schema.q[0].flux,
-            duration=20,
+            duration=20e-6,
             position="step",
             outputs={1, 2},
         )

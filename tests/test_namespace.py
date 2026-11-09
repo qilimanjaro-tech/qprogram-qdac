@@ -54,35 +54,35 @@ def test_wait_trigger_returns_none(qdac_program):
 
 
 def test_set_trigger_defaults(qdac_program):
-    qdac_program.qdac.set_trigger("flux_q0", duration=50)
+    qdac_program.qdac.set_trigger("flux_q0", duration=10e-6)
     op = qdac_program.body.elements[0]
     assert isinstance(op, SetTrigger)
-    assert op.duration == 50
+    assert op.duration == pytest.approx(10e-6)
     assert op.position == "start"
     assert op.outputs == ()
 
 
 def test_set_trigger_with_set_outputs(qdac_program):
-    qdac_program.qdac.set_trigger("flux_q0", 50, outputs={3, 1, 2})
+    qdac_program.qdac.set_trigger("flux_q0", 10e-6, outputs={3, 1, 2})
     op = qdac_program.body.elements[0]
     assert op.outputs == (1, 2, 3)
 
 
 def test_set_trigger_with_list_outputs(qdac_program):
-    qdac_program.qdac.set_trigger("flux_q0", 50, outputs=[1, 2])
+    qdac_program.qdac.set_trigger("flux_q0", 10e-6, outputs=[1, 2])
     op = qdac_program.body.elements[0]
     assert op.outputs == (1, 2)
 
 
 def test_set_trigger_with_generator_outputs(qdac_program):
     """A one-shot iterable is consumed on construction, so the stored tuple is complete."""
-    qdac_program.qdac.set_trigger("flux_q0", 50, outputs=(i for i in (3, 1, 2)))
+    qdac_program.qdac.set_trigger("flux_q0", 10e-6, outputs=(i for i in (3, 1, 2)))
     op = qdac_program.body.elements[0]
     assert op.outputs == (1, 2, 3)
 
 
 def test_set_trigger_with_position_end_step(qdac_program):
-    qdac_program.qdac.set_trigger("flux_q0", 50, position="end_step", outputs=[1])
+    qdac_program.qdac.set_trigger("flux_q0", 10e-6, position="end_step", outputs=[1])
     op = qdac_program.body.elements[0]
     assert op.position == "end_step"
 
@@ -134,7 +134,7 @@ def test_play_appends_op_default_kwargs(qdac_program):
     assert isinstance(op, Play)
     assert op.bus == "flux_q0"
     assert op.waveform is wf
-    assert op.dwell == 1
+    assert op.dwell == 2
     assert op.delay == 0
     assert op.repetitions == 1
     assert op.stepped is False
@@ -142,11 +142,11 @@ def test_play_appends_op_default_kwargs(qdac_program):
 
 def test_play_with_all_kwargs(qdac_program):
     wf = Square(0.5, 100)
-    qdac_program.qdac.play("flux_q0", wf, dwell=10, delay=5, repetitions=3, stepped=True)
+    qdac_program.qdac.play("flux_q0", wf, dwell=10, delay=1e-3, repetitions=3, stepped=True)
     op = qdac_program.body.elements[0]
     assert op.bus == "flux_q0"
     assert op.dwell == 10
-    assert op.delay == 5
+    assert op.delay == pytest.approx(1e-3)
     assert op.repetitions == 3
     assert op.stepped is True
 
@@ -164,7 +164,7 @@ def test_play_returns_none(qdac_program):
 # than one method at a time.
 _BUS_CALLS = [
     pytest.param(lambda ns, bus: ns.wait_trigger(bus, port=1), id="wait_trigger"),
-    pytest.param(lambda ns, bus: ns.set_trigger(bus, 50, outputs=[1]), id="set_trigger"),
+    pytest.param(lambda ns, bus: ns.set_trigger(bus, 10e-6, outputs=[1]), id="set_trigger"),
     pytest.param(lambda ns, bus: ns.set_offset(bus, 0.5), id="set_offset"),
     pytest.param(lambda ns, bus: ns.play(bus, Ramp(0.0, 1.0, 100)), id="play"),
 ]

@@ -17,7 +17,8 @@ The conventions:
 
 - The first argument of every operation is `bus`, a QDAC channel. A plain string or a `BusRef` both work. A `BusRef` that came from a different `BusSchema` than the program's is rejected; nothing else about the bus is checked at build time.
 - Because all four operations carry a `bus`, all four route to that bus's capability slot. QDAC has no FPGA, so a platform normally fills the `host` half of that slot and leaves `rt` empty. Every qdac operation is then dispatched from the host over the chassis slow-control link rather than compiled into a real-time sequencer program. See [Capabilities and profiles](capabilities.md).
-- Only two things in this package accept an `Expression` and can be swept: `set_offset`'s `offset`, and the parameters of the waveform handed to `play`. Everything else is typed `int`, `bool`, or a string literal and is fixed when the program is built.
+- Only two things in this package accept an `Expression` and can be swept: `set_offset`'s `offset`, and the parameters of the waveform handed to `play`. Everything else is a plain number, a `bool`, or a string literal and is fixed when the program is built.
+- Times are not in the nanoseconds the rest of QProgram uses. `play`'s `dwell` is an integer number of microseconds, and `play`'s `delay` and `set_trigger`'s `duration` are seconds. A waveform's own `duration` stays in nanoseconds, since the core DSL defines it.
 
 ## Getting the namespace
 
@@ -88,7 +89,7 @@ Arm one or more of the chassis trigger outputs to fire at a chosen point in the 
 | Argument   | Type                 | Meaning                                             |
 |------------|----------------------|-----------------------------------------------------|
 | `bus`      | `str` / `BusRef`     | QDAC channel whose trigger outputs are configured.   |
-| `duration` | `int`                | Trigger-active duration in nanoseconds.              |
+| `duration` | `float`              | Trigger-active duration in seconds.                  |
 | `position` | `str` literal        | Sequence event at which the triggers fire.           |
 | `outputs`  | iterable of `int`    | Trigger output indices to arm. Empty by default.     |
 
@@ -103,15 +104,15 @@ Arm one or more of the chassis trigger outputs to fire at a chosen point in the 
 
 ```python
 program = QProgram(label="trigger-out", schema=schema)
-program.qdac.set_trigger(q[0].flux, 50, position="start", outputs={1, 2})
-program.qdac.set_trigger(q[0].flux, 20, position="end_step", outputs=[4])
+program.qdac.set_trigger(q[0].flux, 10e-6, position="start", outputs={1, 2})
+program.qdac.set_trigger(q[0].flux, 1e-6, position="end_step", outputs=[4])
 ```
 
 `outputs` accepts any iterable of integers. It is stored sorted with duplicates dropped, so two spellings of the same output set build the same node, hash the same, and serialize to the same `.qp` line:
 
 ```python
 program = QProgram()
-program.qdac.set_trigger("flux_q0", 50, position="step", outputs={3, 1, 1, 2})
+program.qdac.set_trigger("flux_q0", 10e-6, position="step", outputs={3, 1, 1, 2})
 
 program.body.elements[0].outputs  # (1, 2, 3)
 ```
@@ -141,7 +142,7 @@ On the instrument side this lowers to a blocking wait in the channel's sequence,
 
 Capability token: `vendor.qdac.wait_trigger`.
 
-## `play(bus, waveform, dwell=1, delay=0, repetitions=1, stepped=False)`
+## `play(bus, waveform, dwell=2, delay=0.0, repetitions=1, stepped=False)`
 
 Upload an envelope to the channel's waveform engine and emit it. This is the one operation here that produces a shaped output rather than a static level.
 
@@ -149,16 +150,18 @@ Upload an envelope to the channel's waveform engine and emit it. This is the one
 |---------------|------------------|----------------------------------------------------------------|
 | `bus`         | `str` / `BusRef` | QDAC channel that emits the waveform.                           |
 | `waveform`    | `Waveform`       | Single-channel envelope to emit.                                |
-| `dwell`       | `int`            | Per-sample dwell time in nanoseconds. Sets the emission rate.   |
-| `delay`       | `int`            | Delay in nanoseconds between sequence start and the first sample. |
+| `dwell`       | `int`            | Per-sample dwell time in microseconds, at least 2. Sets the emission rate. |
+| `delay`       | `float`          | Delay in seconds between sequence start and the first sample.  |
 | `repetitions` | `int`            | How many times the engine repeats the envelope. `1` plays it once. |
 | `stepped`     | `bool`           | `True` steps through samples discretely, `False` interpolates continuously. |
 
 ```python
 program = QProgram(label="flux-ramp", schema=schema)
 program.qdac.play(q[0].flux, Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=1000), dwell=100)
-program.qdac.play(q[0].flux, Square(0.35, 2000), dwell=200, delay=500, repetitions=4, stepped=True)
+program.qdac.play(q[0].flux, Square(0.35, 2000), dwell=200, delay=1e-3, repetitions=4, stepped=True)
 ```
+
+The QDAC-II holds each sample for at least 2 μs, and the default `dwell` is that floor. A `dwell` under 2 fails validation with a `qdac.dwell-below-minimum` error: see [a dwell below the floor is an error](capabilities.md#a-dwell-below-the-floor-is-an-error).
 
 QDAC is single-channel. `play` always claims `waveform.single`, and the profile lists single-channel waveform classes only, so an IQ envelope on a qdac bus fails validation with a `missing-capability` diagnostic. The [capabilities page](capabilities.md#capability-tokens) has the token list and the exact message.
 
@@ -180,7 +183,7 @@ program.qdac.play(q[0].flux, "flux_ramp")
 program = program.with_waveforms({"flux_ramp": Ramp(0.0, 1.0, 1000)})
 ```
 
-On the instrument side this lowers to a waveform-engine program: the envelope's samples, plus `dwell`, `delay`, `repetitions`, and the stepped-or-continuous mode. The profile records the engine's dwell floor as the `min_dwell_ns` limit.
+On the instrument side this lowers to a waveform-engine program: the envelope's samples, plus `dwell`, `delay`, `repetitions`, and the stepped-or-continuous mode.
 
 Capability tokens: `vendor.qdac.play`, `waveform.single`, and the per-class token of the envelope (`waveform.ramp`, `waveform.square`, and so on).
 
@@ -193,7 +196,7 @@ Capability tokens: `vendor.qdac.play`, `waveform.single`, and the per-class toke
 | `set_trigger`  | none                                       |
 | `wait_trigger` | none                                       |
 
-`duration`, `port`, `dwell`, `delay`, and `repetitions` are typed `int`, `stepped` is typed `bool`, and `position` is one of four string literals. They are values you choose when building the program.
+`port`, `dwell`, and `repetitions` are typed `int`, `duration` and `delay` are typed `float`, `stepped` is typed `bool`, and `position` is one of four string literals. They are values you choose when building the program.
 
 Whenever a qdac operation does reference a loop-bound variable, whether through `offset` or through a waveform parameter, the loop that binds that variable dispatches host-side. The rule and the diagnostic it produces are in [Capabilities and profiles](capabilities.md#swept-variables-force-the-loop-host-side).
 
@@ -243,11 +246,11 @@ The classes live in `qprogram_qdac.operations` (`SetOffset`, `SetTrigger`, `Wait
 
 ## Wire form
 
-Each operation serializes as `qdac.<name>` plus its arguments. Arguments equal to their default are omitted:
+Each operation serializes as `qdac.<name>` plus its arguments. Arguments equal to their default are omitted, and a float is written the way Python prints it, so 10 μs is `1e-05`:
 
 ```text
 qdac.set_offset "flux_q0" 0.42
-qdac.set_trigger "flux_q0" 50 position="end_step" outputs=[1, 3]
+qdac.set_trigger "flux_q0" 1e-05 position="end_step" outputs=[1, 3]
 qdac.wait_trigger "flux_q0" 3
 qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=1000) dwell=100
 ```
@@ -256,6 +259,6 @@ A file carrying any of those lines declares `require qdac 0.2` in its header. [S
 
 ## See also
 
-- [Capabilities and profiles](capabilities.md) covers `qdac-default-v1`, its tokens, limits, and the two predicates that reject or reclassify programs.
+- [Capabilities and profiles](capabilities.md) covers `qdac-default-v1`, its tokens, limits, and the three predicates that reject or reclassify programs.
 - [Lowering onto hardware](../developer/lowering.md) covers what a platform compiler does with these nodes.
 - [API reference](../reference/api.md) has the generated signatures.
