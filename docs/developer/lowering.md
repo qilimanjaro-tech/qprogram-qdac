@@ -44,17 +44,17 @@ print(qp.dumps(program).splitlines()[2])
 
 ```
 QProgram QdacNamespace
-0.2.0
+0.3.0
 (0, 2, 0)
-require qdac 0.2
+require qdac 0.3
 ```
 
-Loading a `.qp` file does not need that import to have happened first. The `[project.entry-points."qprogram.vendors"]` table in `pyproject.toml` maps the vendor name to this module, so `qp.loads` on a file carrying `require qdac 0.2` imports the package on demand:
+Loading a `.qp` file does not need that import to have happened first. The `[project.entry-points."qprogram.vendors"]` table in `pyproject.toml` maps the vendor name to this module, so `qp.loads` on a file carrying `require qdac 0.3` imports the package on demand:
 
 ```python
 import qprogram as qp
 
-text = '#!QProgram 0.2\nrequire qdac 0.2\nbody:\n  qdac.set_offset "flux_q0" 0.42\n'
+text = '#!QProgram 0.3\nrequire qdac 0.3\nbody:\n  qdac.set_offset "flux_q0" 0.42\n'
 program = qp.loads(text)
 print(type(program.body.elements[0]).__module__)
 ```
@@ -121,7 +121,7 @@ caps = PlatformCapabilities(
 )
 
 program = QProgram()
-program.qdac.play("flux_q0", IQDrag(amplitude=0.5, duration=100, sigma=25, beta=0.1))
+program.qdac.play("flux_q0", IQDrag(amplitude=0.5, duration=100, num_sigmas=4, drag_coefficient=0.1))
 
 print(sorted(program.body.elements[0].required_capabilities()))
 for diagnostic in qp.validate(program, caps)[0]:
@@ -536,9 +536,9 @@ Serialization comes for free. The default serializer reflects on `__init__` to e
 
 <!-- check: skip -->
 ```
-#!QProgram 0.2
+#!QProgram 0.3
 
-require qdac 0.2
+require qdac 0.3
 
 body:
   qdac.set_slew_rate "flux_q0" 0.05
@@ -566,7 +566,7 @@ Say 1.0 makes `dwell` required on `qdac.play`, where it had been optional with a
 
 <!-- check: skip -->
 ```
-#!QProgram 0.2
+#!QProgram 0.3
 
 require qdac 0.3
 
@@ -604,7 +604,7 @@ Four rules govern the rewrite:
 
 ```python
 def test_a_0_3_file_gets_the_dwell_1_0_made_required():
-    text = '#!QProgram 0.2\n\nrequire qdac 0.3\n\nbody:\n  qdac.play "flux_q0" "ramp_up"\n'
+    text = '#!QProgram 0.3\n\nrequire qdac 0.3\n\nbody:\n  qdac.play "flux_q0" "ramp_up"\n'
     assert qp.loads(text).body.elements[0].dwell == 2
 ```
 
