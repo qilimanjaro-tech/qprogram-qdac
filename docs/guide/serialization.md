@@ -24,9 +24,9 @@ The format itself, the grammar, and the rules that apply to every operation are 
 A file holding qdac operations names the vendor once, above the body:
 
 ```
-#!QProgram 0.2
+#!QProgram 0.3
 
-require qdac 0.2
+require qdac 0.3
 
 body:
   qdac.set_offset "flux_q0" 0.42
@@ -48,9 +48,9 @@ print(qp.dumps(program))
 ```
 
 ```
-#!QProgram 0.2
+#!QProgram 0.3
 
-require qdac 0.2
+require qdac 0.3
 
 body:
   measure "readout_q0" "readout" "weights" name="m0"
@@ -81,16 +81,16 @@ except PackageNotFoundError:
 register_vendor_version("qdac", __version__)
 ```
 
-The `register_vendor_version` call is the whole version contract. The registry keeps the full string, `0.2.0` for this release, and the writer truncates it to `major.minor` on the `require` line, because compatibility is decided at that granularity and the patch component is informational.
+The `register_vendor_version` call is the whole version contract. The registry keeps the full string, `0.3.0` for this release, and the writer truncates it to `major.minor` on the `require` line, because compatibility is decided at that granularity and the patch component is informational.
 
 Running from a source tree with no installed metadata leaves `__version__` at `0.0.0`, and every file requiring `qdac 0.1` then asks for more than is installed. Install the package, in editable mode if you are working on it, rather than putting `src/` on `PYTHONPATH`.
 
 ## Version mismatches
 
-The parser resolves each `require` line against the registered version before it reads the body. One rule decides the outcome: the installed package must be able to provide what the line asks for. With `qdac 0.2.0` installed, `require qdac 0.2` and `require qdac 0.1` load, and these fail:
+The parser resolves each `require` line against the registered version before it reads the body. One rule decides the outcome: the installed package must be able to provide what the line asks for. With `qdac 0.3.0` installed, `require qdac 0.3`, `require qdac 0.2` and `require qdac 0.1` load, and these fail:
 
 ```
-ParseError: Line 3: file requires qdac 1.0, newer than the installed qdac 0.2.0 — install qdac 1.0 or newer
+ParseError: Line 3: file requires qdac 1.0, newer than the installed qdac 0.3.0 — install qdac 1.0 or newer
 ParseError: Line 3: file version '0.1.0' must be exactly major.minor
 ```
 
@@ -112,9 +112,9 @@ import sys
 
 import qprogram as qp
 
-TEXT = """#!QProgram 0.2
+TEXT = """#!QProgram 0.3
 
-require qdac 0.2
+require qdac 0.3
 
 body:
   qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=2000) dwell=200
@@ -205,9 +205,9 @@ print(qp.dumps(program))
 ```
 
 ```
-#!QProgram 0.2
+#!QProgram 0.3
 
-require qdac 0.2
+require qdac 0.3
 
 body:
   var bias
@@ -258,9 +258,9 @@ Two things have to line up for a promotion: the operation must list the argument
 import qprogram as qp
 import qprogram_qdac  # registers the qdac operations with the serializer
 
-TEXT = """#!QProgram 0.2
+TEXT = """#!QProgram 0.3
 
-require qdac 0.2
+require qdac 0.3
 
 body:
   qdac.set_trigger "flux_q0" 1e-05 outputs="2,1,2"
@@ -307,9 +307,9 @@ print("body equal:", reloaded.body == program.body)
 ```
 
 ```
-#!QProgram 0.2
+#!QProgram 0.3
 
-require qdac 0.2
+require qdac 0.3
 
 metadata:
   label: "flux-bias-sweep"
@@ -346,9 +346,9 @@ A qdac statement fails to load rather than losing content. Each of these three b
 import qprogram as qp
 import qprogram_qdac  # registers the qdac operations with the serializer
 
-HEAD = """#!QProgram 0.2
+HEAD = """#!QProgram 0.3
 
-require qdac 0.2
+require qdac 0.3
 
 body:
 """

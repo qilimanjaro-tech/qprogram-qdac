@@ -178,7 +178,7 @@ def test_iq_waveform_is_rejected_on_a_qdac_bus():
     """An IQ envelope has no token on the single-channel qdac profile, so it fails validation."""
     caps = _make_caps()
     p = QProgram()
-    p.qdac.play("flux_q0", IQDrag(amplitude=0.5, duration=40, sigma=8, beta=0.1))
+    p.qdac.play("flux_q0", IQDrag(amplitude=0.5, duration=40, num_sigmas=5, drag_coefficient=0.1))
     diagnostics = _diagnostics(p, caps)
     assert [d.code for d in diagnostics] == ["missing-capability"]
     assert "waveform.iq_drag" in diagnostics[0].message

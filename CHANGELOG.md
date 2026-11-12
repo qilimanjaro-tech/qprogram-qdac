@@ -4,6 +4,15 @@ Notable changes to QProgram QDAC, newest first. Each entry starts life as a news
 
 <!-- towncrier release notes start -->
 
+## 0.3.0 (2026-11-12)
+
+This release requires qprogram 0.3, and moves `qdac.play`'s `dwell` to microseconds and its `delay` and `qdac.set_trigger`'s `duration` to seconds. No migration is registered, so a `.qp` file written with 0.2 still loads but reads its numbers in the new units, and has to be rebuilt from its program. Installing it also brings the core release's new `Gaussian`, `GaussianDragCorrection`, `IQDrag`, `FlatTop` and `SuddenNetZero` shapes, which the qprogram 0.3.0 changelog covers.
+
+### Changed
+
+- `qdac.play`'s `dwell` is now an integer number of microseconds, default `2`, and `qdac.play`'s `delay` and `qdac.set_trigger`'s `duration` are now seconds, as a `float`; no migration is registered, so a `.qp` file written with 0.2 loads with its numbers read in the new units. The `qdac-default-v1` profile, now at version 0.2.0, rejects a `dwell` under 2 microseconds with a `qdac.dwell-below-minimum` error, and no longer publishes the `min_dwell_ns: 100` limit, which no check read. ([PR #8](https://github.com/qilimanjaro-tech/qprogram-qdac/pull/8))
+
+
 ## 0.2.0 (2026-09-08)
 
 This release requires qprogram 0.2, which is what a `require qdac` line is now read against. One thing follows from the core release rather than from anything here: a `.qp` file written before it no longer loads, because its `#!QProgram 1.0` header reads as a later version than the `0.2` the core writes now, and nothing runs backwards. A file whose header is current is carried up instead, since a `require qdac` line naming an earlier major is migrated rather than refused.
