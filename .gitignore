@@ -43,3 +43,6 @@ Thumbs.db
 
 # Scratch space for local experiments and notebooks
 .tmp/
+
+# Agent scratch output (research, specs, evidence)
+.agents/artifacts/
