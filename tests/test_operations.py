@@ -212,7 +212,7 @@ def test_play_defaults():
     assert op.waveform is wf
     assert op.dwell == 2
     assert op.delay == 0
-    assert op.repetitions == 1
+    assert op.repetitions is None
     assert op.stepped is False
 
 

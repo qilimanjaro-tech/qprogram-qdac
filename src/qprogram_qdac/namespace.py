@@ -105,7 +105,7 @@ class QdacNamespace(VendorNamespace):
         waveform: Waveform,
         dwell: int = 2,
         delay: float = 0.0,
-        repetitions: int = 1,
+        repetitions: int | None = None,
         stepped: bool = False,
     ) -> None:
         """Append a [`Play`][qprogram_qdac.Play] operation.
@@ -117,7 +117,8 @@ class QdacNamespace(VendorNamespace):
                 [`with_waveforms`][qprogram.QProgram.with_waveforms].
             dwell (int): Per-sample dwell time in microseconds, at least 2. Default ``2``.
             delay (float): Delay before the first sample, in seconds. Default ``0.0``.
-            repetitions (int): How many times the envelope is emitted. Default ``1``.
+            repetitions (int | None): How many times the envelope is emitted. Default ``None``: not
+                given, the platform that runs the program chooses the count.
             stepped (bool): ``True`` for discrete-step output, ``False`` for continuous
                 interpolated output. Default ``False``.
 

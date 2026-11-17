@@ -179,8 +179,9 @@ class Play(Operation):
             validation time. Default ``2``.
         delay (float): Delay in seconds between sequence start and the first sample. Default
             ``0.0``.
-        repetitions (int): How many times the engine emits the envelope in total, the first
-            emission included. Default ``1``.
+        repetitions (int | None): How many times the engine emits the envelope in total, the first
+            emission included. Default ``None``: not given, the platform that runs the program
+            chooses the count.
         stepped (bool): ``True`` to step through the samples discretely, re-arming the DAC for each
             one, ``False`` for continuous interpolated output. Default ``False``.
     """
@@ -193,7 +194,7 @@ class Play(Operation):
         waveform: Waveform,
         dwell: int = 2,
         delay: float = 0.0,
-        repetitions: int = 1,
+        repetitions: int | None = None,
         stepped: bool = False,
     ) -> None:
         self.bus = bus

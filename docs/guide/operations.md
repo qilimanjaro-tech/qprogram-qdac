@@ -142,7 +142,7 @@ On the instrument side this lowers to a blocking wait in the channel's sequence,
 
 Capability token: `vendor.qdac.wait_trigger`.
 
-## `play(bus, waveform, dwell=2, delay=0.0, repetitions=1, stepped=False)`
+## `play(bus, waveform, dwell=2, delay=0.0, repetitions=None, stepped=False)`
 
 Upload an envelope to the channel's waveform engine and emit it. This is the one operation here that produces a shaped output rather than a static level.
 
@@ -152,7 +152,7 @@ Upload an envelope to the channel's waveform engine and emit it. This is the one
 | `waveform`    | `Waveform`       | Single-channel envelope to emit.                                |
 | `dwell`       | `int`            | Per-sample dwell time in microseconds, at least 2. Sets the emission rate. |
 | `delay`       | `float`          | Delay in seconds between sequence start and the first sample.  |
-| `repetitions` | `int`            | How many times the engine repeats the envelope. `1` plays it once. |
+| `repetitions` | `int` / `None`   | How many times the engine repeats the envelope. `1` plays it once; `None`, the default, leaves the count to the platform that runs the program. |
 | `stepped`     | `bool`           | `True` steps through samples discretely, `False` interpolates continuously. |
 
 ```python

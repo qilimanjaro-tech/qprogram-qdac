@@ -172,8 +172,17 @@ def test_play_default_args_round_trip():
     assert op.bus == "flux_q0"
     assert op.dwell == 2
     assert op.delay == 0
-    assert op.repetitions == 1
+    assert op.repetitions is None
     assert op.stepped is False
+
+
+def test_play_with_one_repetition_round_trip():
+    """One repetition is no longer the default, so it is written and read back."""
+    p = QdacQProgram()
+    p.qdac.play("flux_q0", Square(0.5, 100), repetitions=1)
+    text = dumps(p)
+    assert "repetitions=1" in text
+    assert loads(text).body.elements[0].repetitions == 1
 
 
 # ---------------------------------------------------------------------------
