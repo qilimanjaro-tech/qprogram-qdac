@@ -81,6 +81,18 @@ def test_set_trigger_with_generator_outputs(qdac_program):
     assert op.outputs == (1, 2, 3)
 
 
+def test_set_trigger_with_one_int_output(qdac_program):
+    qdac_program.qdac.set_trigger("flux_q0", 10e-6, outputs=1)
+    op = qdac_program.body.elements[0]
+    assert op.outputs == (1,)
+
+
+def test_set_trigger_positional_order_is_outputs_then_position(qdac_program):
+    qdac_program.qdac.set_trigger("flux_q0", 10e-6, [2], "end")
+    op = qdac_program.body.elements[0]
+    assert (op.outputs, op.position) == ((2,), "end")
+
+
 def test_set_trigger_with_position_end_step(qdac_program):
     qdac_program.qdac.set_trigger("flux_q0", 10e-6, position="end_step", outputs=[1])
     op = qdac_program.body.elements[0]
@@ -136,7 +148,7 @@ def test_play_appends_op_default_kwargs(qdac_program):
     assert op.waveform is wf
     assert op.dwell == 2
     assert op.delay == 0
-    assert op.repetitions == 1
+    assert op.repetitions is None
     assert op.stepped is False
 
 

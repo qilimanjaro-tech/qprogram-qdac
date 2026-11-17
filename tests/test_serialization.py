@@ -172,8 +172,17 @@ def test_play_default_args_round_trip():
     assert op.bus == "flux_q0"
     assert op.dwell == 2
     assert op.delay == 0
-    assert op.repetitions == 1
+    assert op.repetitions is None
     assert op.stepped is False
+
+
+def test_play_with_one_repetition_round_trip():
+    """One repetition is no longer the default, so it is written and read back."""
+    p = QdacQProgram()
+    p.qdac.play("flux_q0", Square(0.5, 100), repetitions=1)
+    text = dumps(p)
+    assert "repetitions=1" in text
+    assert loads(text).body.elements[0].repetitions == 1
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +199,7 @@ def test_loads_hand_written_file():
         "\n"
         "body:\n"
         '  qdac.set_offset "flux_q0" 0.42\n'
-        '  qdac.set_trigger "flux_q0" 2e-05 position="step" outputs=[1, 2]\n'
+        '  qdac.set_trigger "flux_q0" 2e-05 outputs=[1, 2] position="step"\n'
         '  qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=100) dwell=10 stepped=true\n'
         '  qdac.wait_trigger "flux_q0" 3\n'
     )
@@ -201,6 +210,13 @@ def test_loads_hand_written_file():
     assert (play.dwell, play.stepped) == (10, True)
     assert wait_trigger.port == 3
     assert dumps(p) == text
+
+
+def test_loads_set_trigger_written_with_position_first():
+    """A file written before outputs came first still loads: the writer names both arguments."""
+    text = f'{HEADER}\n\n{REQUIRE}\n\nbody:\n  qdac.set_trigger "flux_q0" 2e-05 position="step" outputs=[1, 2]\n'
+    (trigger,) = loads(text).body.elements
+    assert (trigger.position, trigger.outputs) == ("step", (1, 2))
 
 
 # ---------------------------------------------------------------------------

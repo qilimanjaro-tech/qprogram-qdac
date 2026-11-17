@@ -65,25 +65,25 @@ class QdacNamespace(VendorNamespace):
         self,
         bus: str,
         duration: float,
+        outputs: int | Iterable[int] = (),
         position: TriggerPosition = "start",
-        outputs: Iterable[int] = (),
     ) -> None:
         """Append a [`SetTrigger`][qprogram_qdac.SetTrigger] operation.
 
         Args:
             bus (str): QDAC channel whose trigger outputs are being configured.
             duration (float): Trigger-active duration in seconds, ``10e-6`` for 10 μs.
+            outputs (int | Iterable[int]): Trigger output index, or indices, to arm: one int, or any
+                iterable of ints (``set``, ``list``, ``tuple``, generator). Empty by default, which
+                the ``qdac.empty-trigger-outputs`` predicate rejects at validation time.
             position (TriggerPosition): Sequence event at which the triggers fire, one of
                 ``"start"``, ``"step"``, ``"end"``, ``"end_step"``. Default ``"start"``.
-            outputs (Iterable[int]): Trigger output indices to arm. Any iterable of ints will do:
-                ``set``, ``list``, ``tuple``, generator. Empty by default, which the
-                ``qdac.empty-trigger-outputs`` predicate rejects at validation time.
 
         Raises:
             ValidationError: If ``bus`` is a [`BusRef`][qprogram.BusRef] from another schema than the
                 one attached to the program.
         """
-        self._append(SetTrigger(bus=bus, duration=duration, position=position, outputs=outputs))
+        self._append(SetTrigger(bus=bus, duration=duration, outputs=outputs, position=position))
 
     def set_offset(self, bus: str, offset: float | Expression) -> None:
         """Append a [`SetOffset`][qprogram_qdac.SetOffset] operation.
@@ -105,7 +105,7 @@ class QdacNamespace(VendorNamespace):
         waveform: Waveform,
         dwell: int = 2,
         delay: float = 0.0,
-        repetitions: int = 1,
+        repetitions: int | None = None,
         stepped: bool = False,
     ) -> None:
         """Append a [`Play`][qprogram_qdac.Play] operation.
@@ -117,7 +117,8 @@ class QdacNamespace(VendorNamespace):
                 [`with_waveforms`][qprogram.QProgram.with_waveforms].
             dwell (int): Per-sample dwell time in microseconds, at least 2. Default ``2``.
             delay (float): Delay before the first sample, in seconds. Default ``0.0``.
-            repetitions (int): How many times the envelope is emitted. Default ``1``.
+            repetitions (int | None): How many times the envelope is emitted. Default ``None``: not
+                given, the platform that runs the program chooses the count.
             stepped (bool): ``True`` for discrete-step output, ``False`` for continuous
                 interpolated output. Default ``False``.
 

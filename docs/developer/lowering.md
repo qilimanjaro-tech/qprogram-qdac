@@ -83,7 +83,7 @@ Not done for you: no clamping to the channel's output range, no conversion to DA
 ### `qdac.play`
 
 ```
-Play(bus, waveform, dwell=2, delay=0.0, repetitions=1, stepped=False)
+Play(bus, waveform, dwell=2, delay=0.0, repetitions=None, stepped=False)
 qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=1000) dwell=10
 ```
 
@@ -95,7 +95,7 @@ The four engine arguments are pass-through values:
 |---------------|-------------------------------------------------------------|
 | `dwell`       | How long the engine holds each sample, in microseconds. An integer, at least 2. |
 | `delay`       | Seconds between the sequence start and the first sample.     |
-| `repetitions` | How many times the engine repeats the envelope.              |
+| `repetitions` | How many times the engine repeats the envelope. `None` means not given: the platform chooses the count. |
 | `stepped`     | Discrete steps when `True`, interpolated output when `False`.|
 
 Four things the DSL deliberately does not do:
@@ -166,8 +166,8 @@ Both transforms work on QDAC nodes for the same reason: `Play` declares `WAVEFOR
 ### `qdac.set_trigger`
 
 ```
-SetTrigger(bus, duration, position="start", outputs=())
-qdac.set_trigger "flux_q0" 2e-05 position="step" outputs=[1, 2]
+SetTrigger(bus, duration, outputs=(), position="start")
+qdac.set_trigger "flux_q0" 2e-05 outputs=[1, 2] position="step"
 ```
 
 Arm chassis trigger outputs to fire at a sequence event. The platform routes each index in `outputs` on the internal trigger bus and holds it active for `duration` seconds.
@@ -201,7 +201,7 @@ Not done for you: there is no timeout, no bounds check on the port, and no deadl
 | `SetOffset.offset`    | volts                  | nothing                                 |
 | `Play.dwell`          | microseconds per sample | at least 2                             |
 | `Play.delay`          | seconds                | nothing                                 |
-| `Play.repetitions`    | count                  | nothing                                 |
+| `Play.repetitions`    | count, or `None`       | nothing                                 |
 | `SetTrigger.duration` | seconds                | nothing                                 |
 | `SetTrigger.outputs`  | chassis output index    | sorted and deduplicated; empty rejected |
 | `WaitTrigger.port`    | chassis input index     | nothing                                 |
