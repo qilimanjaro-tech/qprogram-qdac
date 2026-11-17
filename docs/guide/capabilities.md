@@ -68,7 +68,7 @@ caps = qp.PlatformCapabilities(
 )
 
 program = QProgram(label="iq-on-qdac")
-program.qdac.play("flux_q0", IQDrag(0.5, 40, 8, 0.1))
+program.qdac.play("flux_q0", IQDrag(amplitude=0.5, duration=40, num_sigmas=5, drag_coefficient=0.1))
 
 print(qp.explain(program, caps))
 ```
@@ -76,7 +76,7 @@ print(qp.explain(program, caps))
 ```text
 plan for 'iq-on-qdac' — errors: 1 · warnings: 0 · info: 0
 body
-└─ qdac.play "flux_q0" IQDrag(amplitude=0.5, duration=40, sigma=8, beta=0.1)  [--]       !! missing-capability: 'Play' requires capability 'waveform.iq_drag' which is not supported by 'qdac-default-v1' (host)
+└─ qdac.play "flux_q0" IQDrag(amplitude=0.5, duration=40, num_sigmas=5, drag_coefficient=0.1)  [--]       !! missing-capability: 'Play' requires capability 'waveform.iq_drag' which is not supported by 'qdac-default-v1' (host)
 ```
 
 `[--]` in the domain column means no domain can run the node.

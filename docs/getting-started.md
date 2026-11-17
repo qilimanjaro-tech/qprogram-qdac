@@ -57,13 +57,13 @@ except AttributeError as error:
 AttributeError: No vendor namespace 'qdac' registered on QProgram
 ```
 
-One case does not need the import at all. A `.qp` file whose header carries `require qdac 0.2` makes the parser look up this package through its `qprogram.vendors` entry point and import it on demand, so the file loads even when the reader never mentioned QDAC:
+One case does not need the import at all. A `.qp` file whose header carries `require qdac 0.3` makes the parser look up this package through its `qprogram.vendors` entry point and import it on demand, so the file loads even when the reader never mentioned QDAC:
 
 ```python
 import qprogram as qp
 
-text = """#!QProgram 0.2
-require qdac 0.2
+text = """#!QProgram 0.3
+require qdac 0.3
 body:
   qdac.set_offset "flux_q0" 0.42
   qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=1000) dwell=100
@@ -108,10 +108,10 @@ print(qp.dumps(program))
 This one needs `qprogram-qblox` installed as well. The resulting file carries a `require` line per vendor, and the parser checks each one against the installed extension:
 
 ```
-#!QProgram 0.2
+#!QProgram 0.3
 
 require qblox 0.2
-require qdac 0.2
+require qdac 0.3
 
 metadata:
   label: "flux-bias-and-readout"

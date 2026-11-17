@@ -268,7 +268,8 @@ def test_play_required_capabilities_always_include_the_single_channel_token():
     are real-valued. What stops the program is the per-class token missing from a single-channel
     profile.
     """
-    caps = Play("flux_q0", IQDrag(amplitude=0.5, duration=40, sigma=8, beta=0.1)).required_capabilities()
+    iq_drag = IQDrag(amplitude=0.5, duration=40, num_sigmas=5, drag_coefficient=0.1)
+    caps = Play("flux_q0", iq_drag).required_capabilities()
     assert caps == {"vendor.qdac.play", "waveform.single", "waveform.iq_drag"}
 
 
