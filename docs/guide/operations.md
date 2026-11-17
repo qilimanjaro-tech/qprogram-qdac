@@ -82,7 +82,7 @@ On the instrument side this lowers to one slow-control write per value: the plat
 
 Capability tokens: `vendor.qdac.set_offset`, plus one `expr.*` token per node kind in the offset expression (`expr.variable`, `expr.binary_op`, `expr.constant`, and so on). The `expr.*` tokens are always checked against the platform slot, never against the bus slot.
 
-## `set_trigger(bus, duration, position="start", outputs=())`
+## `set_trigger(bus, duration, outputs=(), position="start")`
 
 Arm one or more of the chassis trigger outputs to fire at a chosen point in the channel's sequence. This is how a QDAC sequence hands timing to another instrument.
 
@@ -90,8 +90,8 @@ Arm one or more of the chassis trigger outputs to fire at a chosen point in the 
 |------------|----------------------|-----------------------------------------------------|
 | `bus`      | `str` / `BusRef`     | QDAC channel whose trigger outputs are configured.   |
 | `duration` | `float`              | Trigger-active duration in seconds.                  |
+| `outputs`  | `int` / iterable of `int` | Trigger output index, or indices, to arm. Empty by default. |
 | `position` | `str` literal        | Sequence event at which the triggers fire.           |
-| `outputs`  | iterable of `int`    | Trigger output indices to arm. Empty by default.     |
 
 `position` takes one of four values:
 
@@ -250,7 +250,7 @@ Each operation serializes as `qdac.<name>` plus its arguments. Arguments equal t
 
 ```text
 qdac.set_offset "flux_q0" 0.42
-qdac.set_trigger "flux_q0" 1e-05 position="end_step" outputs=[1, 3]
+qdac.set_trigger "flux_q0" 1e-05 outputs=[1, 3] position="end_step"
 qdac.wait_trigger "flux_q0" 3
 qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=1000) dwell=100
 ```

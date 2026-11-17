@@ -166,8 +166,8 @@ Both transforms work on QDAC nodes for the same reason: `Play` declares `WAVEFOR
 ### `qdac.set_trigger`
 
 ```
-SetTrigger(bus, duration, position="start", outputs=())
-qdac.set_trigger "flux_q0" 2e-05 position="step" outputs=[1, 2]
+SetTrigger(bus, duration, outputs=(), position="start")
+qdac.set_trigger "flux_q0" 2e-05 outputs=[1, 2] position="step"
 ```
 
 Arm chassis trigger outputs to fire at a sequence event. The platform routes each index in `outputs` on the internal trigger bus and holds it active for `duration` seconds.

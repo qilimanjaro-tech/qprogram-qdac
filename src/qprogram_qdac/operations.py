@@ -29,6 +29,7 @@ and [`SetTrigger`][qprogram_qdac.SetTrigger]'s ``duration`` are seconds. A wavef
 
 from __future__ import annotations
 
+from numbers import Integral
 from typing import TYPE_CHECKING, ClassVar, Literal
 
 from qprogram.operations.operation import Operation
@@ -50,17 +51,18 @@ TriggerPosition = Literal["start", "step", "end", "end_step"]
 """
 
 
-def _normalize_outputs(value: Iterable[int] | str) -> tuple[int, ...]:
+def _normalize_outputs(value: int | Iterable[int] | str) -> tuple[int, ...]:
     """Return ``value`` as a sorted tuple of unique output indices.
 
-    Accepts any iterable of integers (``set``, ``list``, ``tuple``, numpy array, ``range``,
-    generator), and the comma-separated string a hand-written ``.qp`` file may carry
+    Accepts a single integer (one output), any iterable of integers (``set``, ``list``, ``tuple``,
+    numpy array, ``range``, generator), and the comma-separated string a hand-written ``.qp`` file may carry
     (``outputs="1,2,3"``). Duplicates are dropped and the result is sorted, so two spellings of the
     same set of outputs hash and compare the same. Coercion is ``int()``, so a real-numbered element
     is truncated towards zero rather than rejected.
 
     Args:
-        value (Iterable[int] | str): Output indices, or a comma-separated string of them.
+        value (int | Iterable[int] | str): One output index, output indices, or a comma-separated string
+            of them.
 
     Returns:
         The indices as a sorted tuple, with duplicates removed.
@@ -71,6 +73,8 @@ def _normalize_outputs(value: Iterable[int] | str) -> tuple[int, ...]:
     """
     if isinstance(value, str):
         return tuple(sorted({int(p.strip()) for p in value.split(",") if p.strip()}))
+    if isinstance(value, (int, Integral)):
+        return (int(value),)
     return tuple(sorted({int(x) for x in value}))
 
 
@@ -105,11 +109,11 @@ class SetTrigger(Operation):
     Args:
         bus (str): QDAC channel whose trigger outputs are being configured.
         duration (float): Trigger-active duration in seconds, ``10e-6`` for 10 μs.
+        outputs (int | Iterable[int] | str): Trigger output index, or indices, to arm. One int, any
+            iterable of ints, or a comma-separated string of them. Empty by default, which the
+            ``qdac.empty-trigger-outputs`` predicate rejects at validation time.
         position (TriggerPosition): Sequence event at which the triggers fire, one of ``"start"``,
             ``"step"``, ``"end"``, ``"end_step"``. Default ``"start"``.
-        outputs (Iterable[int] | str): Trigger output indices to arm. Any iterable of ints, or a
-            comma-separated string of them. Empty by default, which the
-            ``qdac.empty-trigger-outputs`` predicate rejects at validation time.
 
     Attributes:
         outputs (tuple[int, ...]): The argument as stored, sorted and deduplicated on the way in, so
@@ -125,13 +129,13 @@ class SetTrigger(Operation):
         self,
         bus: str,
         duration: float,
+        outputs: int | Iterable[int] | str = (),
         position: TriggerPosition = "start",
-        outputs: Iterable[int] | str = (),
     ) -> None:
         self.bus = bus
         self.duration = duration
-        self.position: TriggerPosition = position
         self.outputs: tuple[int, ...] = _normalize_outputs(outputs)
+        self.position: TriggerPosition = position
 
     def required_capabilities(self) -> set[str]:
         """Return the single ``vendor.qdac.set_trigger`` token."""

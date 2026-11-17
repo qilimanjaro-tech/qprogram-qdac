@@ -126,6 +126,16 @@ def test_set_trigger_with_list_outputs():
     assert op.outputs == (1, 2)
 
 
+def test_set_trigger_with_one_int_output():
+    op = SetTrigger("flux_q0", 10e-6, outputs=3)
+    assert op.outputs == (3,)
+
+
+def test_set_trigger_positional_order_is_outputs_then_position():
+    op = SetTrigger("flux_q0", 10e-6, 1, "step")
+    assert (op.outputs, op.position) == ((1,), "step")
+
+
 def test_set_trigger_each_position():
     for pos in ("start", "step", "end", "end_step"):
         op = SetTrigger("flux_q0", 10e-6, position=pos, outputs=[1])

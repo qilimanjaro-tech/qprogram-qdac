@@ -153,7 +153,7 @@ Positional arguments come in constructor order, then optional keywords in any or
 | Operation | Wire form |
 |---|---|
 | `wait_trigger` | `qdac.wait_trigger "flux_q0" 2` |
-| `set_trigger` | `qdac.set_trigger "flux_q0" 1e-05 position="end_step" outputs=[1, 3]` |
+| `set_trigger` | `qdac.set_trigger "flux_q0" 1e-05 outputs=[1, 3] position="end_step"` |
 | `set_offset` | `qdac.set_offset "flux_q0" 0.42` |
 | `play` | `qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=2000)` |
 
@@ -217,7 +217,7 @@ body:
     qdac.set_offset "flux_q0" bias
     qdac.set_offset "flux_q0" ((bias * 0.5) - 0.25)
     qdac.set_trigger "flux_q0" 1e-05 outputs=[1]
-    qdac.set_trigger "flux_q0" 1e-05 position="end_step" outputs=[1, 3]
+    qdac.set_trigger "flux_q0" 1e-05 outputs=[1, 3] position="end_step"
     qdac.wait_trigger "flux_q0" 2
     qdac.play "flux_q0" "flux_pulse"
     qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=2000)
@@ -326,7 +326,7 @@ body:
 
   for bias in Linspace(start=-0.5, stop=0.5, num=11):
     qdac.set_offset q[0].flux bias
-    qdac.set_trigger q[0].flux 1e-05 position="step" outputs=[1, 2]
+    qdac.set_trigger q[0].flux 1e-05 outputs=[1, 2] position="step"
     qdac.play q[0].flux Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=2000) dwell=200 repetitions=4
     qdac.wait_trigger q[0].flux 3
 ```
