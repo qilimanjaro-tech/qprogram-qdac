@@ -4,7 +4,7 @@ Notable changes to QProgram QDAC, newest first. Each entry starts life as a news
 
 <!-- towncrier release notes start -->
 
-## 0.3.0 (2026-11-12)
+## 0.3.0 (2026-11-17)
 
 ### Changed
 
