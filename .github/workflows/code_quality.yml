@@ -33,6 +33,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
+          version: "0.13.8"
           enable-cache: true
           cache-dependency-glob: |
             **/pyproject.toml
@@ -43,7 +44,7 @@ jobs:
       # the code, so linting needs the linters and nothing else.
       - name: Install the linters
         run: |
-          uv sync --frozen --only-group dev --no-install-project
+          uv sync --locked --no-build --only-group dev --no-install-project
           echo "VIRTUAL_ENV=$PWD/.venv" >> "$GITHUB_ENV"
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
@@ -70,6 +71,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
+          version: "0.13.8"
           enable-cache: true
           cache-dependency-glob: |
             **/pyproject.toml
@@ -78,7 +80,7 @@ jobs:
 
       - name: Install the project
         run: |
-          uv sync --frozen --group dev
+          uv sync --locked --no-build --group dev
           echo "VIRTUAL_ENV=$PWD/.venv" >> "$GITHUB_ENV"
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
