@@ -26,7 +26,7 @@ A file holding qdac operations names the vendor once, above the body:
 ```
 #!QProgram 0.3
 
-require qdac 0.3
+require qdac 0.4
 
 body:
   qdac.set_offset "flux_q0" 0.42
@@ -50,7 +50,7 @@ print(qp.dumps(program))
 ```
 #!QProgram 0.3
 
-require qdac 0.3
+require qdac 0.4
 
 body:
   measure "readout_q0" "readout" "weights" name="m0"
@@ -81,20 +81,20 @@ except PackageNotFoundError:
 register_vendor_version("qdac", __version__)
 ```
 
-The `register_vendor_version` call is the whole version contract. The registry keeps the full string, `0.3.0` for this release, and the writer truncates it to `major.minor` on the `require` line, because compatibility is decided at that granularity and the patch component is informational.
+The `register_vendor_version` call is the whole version contract. The registry keeps the full string, `0.4.0` for this release, and the writer truncates it to `major.minor` on the `require` line, because compatibility is decided at that granularity and the patch component is informational.
 
 Running from a source tree with no installed metadata leaves `__version__` at `0.0.0`, and every file requiring `qdac 0.1` then asks for more than is installed. Install the package, in editable mode if you are working on it, rather than putting `src/` on `PYTHONPATH`.
 
 ## Version mismatches
 
-The parser resolves each `require` line against the registered version before it reads the body. One rule decides the outcome: the installed package must be able to provide what the line asks for. With `qdac 0.3.0` installed, `require qdac 0.3`, `require qdac 0.2` and `require qdac 0.1` load, and these fail:
+The parser resolves each `require` line against the registered version before it reads the body. One rule decides the outcome: the installed package must be able to provide what the line asks for. With `qdac 0.4.0` installed, `require qdac 0.4`, `require qdac 0.3`, `require qdac 0.2` and `require qdac 0.1` load, and these fail:
 
 ```
-ParseError: Line 3: file requires qdac 1.0, newer than the installed qdac 0.3.0 — install qdac 1.0 or newer
+ParseError: Line 3: file requires qdac 1.0, newer than the installed qdac 0.4.0 — install qdac 1.0 or newer
 ParseError: Line 3: file version '0.1.0' must be exactly major.minor
 ```
 
-An older line is the readable case. A release that only adds operations leaves every older file valid, and a release that changes an operation's wire form registers a [migration](../developer/lowering.md#changing-one-that-already-exists) that repairs the older line, so an earlier major loads too. The one exception is 0.3, which moved `play`'s `dwell` from nanoseconds to microseconds, and `play`'s `delay` and `set_trigger`'s `duration` from nanoseconds to seconds, with no migration: a file that says `require qdac 0.1` or `require qdac 0.2` loads under 0.3 with its numbers read in the new units. Rebuild such a file from its program rather than loading it. A file that asks for a version this package does not have would reference statements it cannot build, so it is refused up front. The line carries `major.minor` and nothing else: a patch release of this package changes code and never the wire form, so there is no patch for a file to declare.
+An older line is the readable case. A release that only adds operations leaves every older file valid, and a release that changes an operation's wire form registers a [migration](../developer/lowering.md#changing-one-that-already-exists) that repairs the older line, so an earlier major loads too. The exceptions are 0.3 and 0.4, which registered none. 0.3 moved `play`'s `dwell` from nanoseconds to microseconds, and `play`'s `delay` and `set_trigger`'s `duration` from nanoseconds to seconds: a file that says `require qdac 0.1` or `require qdac 0.2` loads under 0.3 with its numbers read in the new units. 0.4 made `play`'s `repetitions` default to `None` where it had been `1`: a 0.3 file left `repetitions=1` out as the default, so those plays load under 0.4 with the count unset. Rebuild such a file from its program rather than loading it. A file that asks for a version this package does not have would reference statements it cannot build, so it is refused up front. The line carries `major.minor` and nothing else: a patch release of this package changes code and never the wire form, so there is no patch for a file to declare.
 
 ## Auto-activation
 
@@ -114,7 +114,7 @@ import qprogram as qp
 
 TEXT = """#!QProgram 0.3
 
-require qdac 0.3
+require qdac 0.4
 
 body:
   qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=2000) dwell=200
@@ -207,7 +207,7 @@ print(qp.dumps(program))
 ```
 #!QProgram 0.3
 
-require qdac 0.3
+require qdac 0.4
 
 body:
   var bias
@@ -260,7 +260,7 @@ import qprogram_qdac  # registers the qdac operations with the serializer
 
 TEXT = """#!QProgram 0.3
 
-require qdac 0.3
+require qdac 0.4
 
 body:
   qdac.set_trigger "flux_q0" 1e-05 outputs="2,1,2"
@@ -309,7 +309,7 @@ print("body equal:", reloaded.body == program.body)
 ```
 #!QProgram 0.3
 
-require qdac 0.3
+require qdac 0.4
 
 metadata:
   label: "flux-bias-sweep"
@@ -348,7 +348,7 @@ import qprogram_qdac  # registers the qdac operations with the serializer
 
 HEAD = """#!QProgram 0.3
 
-require qdac 0.3
+require qdac 0.4
 
 body:
 """

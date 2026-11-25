@@ -4,6 +4,15 @@ Notable changes to QProgram QDAC, newest first. Each entry starts life as a news
 
 <!-- towncrier release notes start -->
 
+## 0.4.0 (2026-11-25)
+
+### Changed
+
+- `qdac.play`'s `repetitions` now defaults to `None`, meaning not given: the platform that runs the program chooses the count, where it used to default to `1`. A play with `repetitions=1` now writes it to `.qp`. No migration is registered, and 0.3 left `repetitions=1` out of a `.qp` file as the default, so a play that a 0.3 file saved with one repetition loads with `None`.
+
+  `qdac.set_trigger` and `SetTrigger` take `outputs` before `position`, `(bus, duration, outputs, position)`, and `outputs` accepts one int as well as an iterable of them. A call that passes `position` by position, and not by name, needs its two last arguments swapped. ([PR #14](https://github.com/qilimanjaro-tech/qprogram-qdac/pull/14))
+
+
 ## 0.3.0 (2026-11-17)
 
 ### Changed
