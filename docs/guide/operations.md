@@ -82,7 +82,7 @@ On the instrument side this lowers to one slow-control write per value: the plat
 
 Capability tokens: `vendor.qdac.set_offset`, plus one `expr.*` token per node kind in the offset expression (`expr.variable`, `expr.binary_op`, `expr.constant`, and so on). The `expr.*` tokens are always checked against the platform slot, never against the bus slot.
 
-## `set_trigger(bus, duration, position="start", outputs=())`
+## `set_trigger(bus, duration, outputs=(), position="start")`
 
 Arm one or more of the chassis trigger outputs to fire at a chosen point in the channel's sequence. This is how a QDAC sequence hands timing to another instrument.
 
@@ -90,8 +90,8 @@ Arm one or more of the chassis trigger outputs to fire at a chosen point in the 
 |------------|----------------------|-----------------------------------------------------|
 | `bus`      | `str` / `BusRef`     | QDAC channel whose trigger outputs are configured.   |
 | `duration` | `float`              | Trigger-active duration in seconds.                  |
+| `outputs`  | `int` / iterable of `int` | Trigger output index, or indices, to arm. Empty by default. |
 | `position` | `str` literal        | Sequence event at which the triggers fire.           |
-| `outputs`  | iterable of `int`    | Trigger output indices to arm. Empty by default.     |
 
 `position` takes one of four values:
 
@@ -142,7 +142,7 @@ On the instrument side this lowers to a blocking wait in the channel's sequence,
 
 Capability token: `vendor.qdac.wait_trigger`.
 
-## `play(bus, waveform, dwell=2, delay=0.0, repetitions=1, stepped=False)`
+## `play(bus, waveform, dwell=2, delay=0.0, repetitions=None, stepped=False)`
 
 Upload an envelope to the channel's waveform engine and emit it. This is the one operation here that produces a shaped output rather than a static level.
 
@@ -152,7 +152,7 @@ Upload an envelope to the channel's waveform engine and emit it. This is the one
 | `waveform`    | `Waveform`       | Single-channel envelope to emit.                                |
 | `dwell`       | `int`            | Per-sample dwell time in microseconds, at least 2. Sets the emission rate. |
 | `delay`       | `float`          | Delay in seconds between sequence start and the first sample.  |
-| `repetitions` | `int`            | How many times the engine repeats the envelope. `1` plays it once. |
+| `repetitions` | `int` / `None`   | How many times the engine repeats the envelope. `1` plays it once; `None`, the default, leaves the count to the platform that runs the program. |
 | `stepped`     | `bool`           | `True` steps through samples discretely, `False` interpolates continuously. |
 
 ```python
@@ -250,7 +250,7 @@ Each operation serializes as `qdac.<name>` plus its arguments. Arguments equal t
 
 ```text
 qdac.set_offset "flux_q0" 0.42
-qdac.set_trigger "flux_q0" 1e-05 position="end_step" outputs=[1, 3]
+qdac.set_trigger "flux_q0" 1e-05 outputs=[1, 3] position="end_step"
 qdac.wait_trigger "flux_q0" 3
 qdac.play "flux_q0" Ramp(from_amplitude=0.0, to_amplitude=1.0, duration=1000) dwell=100
 ```
