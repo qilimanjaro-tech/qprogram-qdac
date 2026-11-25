@@ -40,7 +40,7 @@ That prints the program as `.qp` text:
 ```
 #!QProgram 0.3
 
-require qdac 0.3
+require qdac 0.4
 
 metadata:
   label: "flux-ramp"
@@ -58,7 +58,7 @@ body:
   qdac.wait_trigger q[0].flux 3
 ```
 
-The `require qdac 0.3` line is the whole compatibility story. `qp.load` checks it against the installed extension, and imports this package on demand if the reader never did.
+The `require qdac 0.4` line is the whole compatibility story. `qp.load` checks it against the installed extension, and imports this package on demand if the reader never did.
 
 ## Where to go next
 
@@ -74,4 +74,4 @@ The `require qdac 0.3` line is the whole compatibility story. `qp.load` checks i
 
 ## Status
 
-The vendor protocol version is this package's own version, and `.qp` files carry it as `require qdac <major>.<minor>`. A file loads against any installed `qprogram-qdac` at that version or above: when a release changes an operation's wire form it registers a migration for it, and the older spelling is rewritten on the way in. The one exception is 0.3, which moved `play`'s `dwell` from nanoseconds to microseconds, and `play`'s `delay` and `set_trigger`'s `duration` from nanoseconds to seconds, with no migration: a file written for 0.1 or 0.2 loads with its numbers read in the new units. A file asking for more than the installed package provides is a `ParseError` rather than a partial load. The Python API is pre-1.0 and allowed to move; the wire form is the steadier of the two.
+The vendor protocol version is this package's own version, and `.qp` files carry it as `require qdac <major>.<minor>`. A file loads against any installed `qprogram-qdac` at that version or above: when a release changes an operation's wire form it registers a migration for it, and the older spelling is rewritten on the way in. The exceptions are 0.3 and 0.4, which registered none. 0.3 moved `play`'s `dwell` from nanoseconds to microseconds, and `play`'s `delay` and `set_trigger`'s `duration` from nanoseconds to seconds, so a file written for 0.1 or 0.2 loads with its numbers read in the new units. 0.4 made `play`'s `repetitions` default to `None` where it had been `1`, so a play that a 0.3 file saved with one repetition loads with the count unset. A file asking for more than the installed package provides is a `ParseError` rather than a partial load. The Python API is pre-1.0 and allowed to move; the wire form is the steadier of the two.

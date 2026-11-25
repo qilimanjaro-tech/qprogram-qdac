@@ -44,17 +44,17 @@ print(qp.dumps(program).splitlines()[2])
 
 ```
 QProgram QdacNamespace
-0.3.0
+0.4.0
 (0, 2, 0)
-require qdac 0.3
+require qdac 0.4
 ```
 
-Loading a `.qp` file does not need that import to have happened first. The `[project.entry-points."qprogram.vendors"]` table in `pyproject.toml` maps the vendor name to this module, so `qp.loads` on a file carrying `require qdac 0.3` imports the package on demand:
+Loading a `.qp` file does not need that import to have happened first. The `[project.entry-points."qprogram.vendors"]` table in `pyproject.toml` maps the vendor name to this module, so `qp.loads` on a file carrying `require qdac 0.4` imports the package on demand:
 
 ```python
 import qprogram as qp
 
-text = '#!QProgram 0.3\nrequire qdac 0.3\nbody:\n  qdac.set_offset "flux_q0" 0.42\n'
+text = '#!QProgram 0.3\nrequire qdac 0.4\nbody:\n  qdac.set_offset "flux_q0" 0.42\n'
 program = qp.loads(text)
 print(type(program.body.elements[0]).__module__)
 ```
@@ -538,7 +538,7 @@ Serialization comes for free. The default serializer reflects on `__init__` to e
 ```
 #!QProgram 0.3
 
-require qdac 0.3
+require qdac 0.4
 
 body:
   qdac.set_slew_rate "flux_q0" 0.05
@@ -560,7 +560,7 @@ Each new operation earns one test per module in `tests/`:
 
 ### Changing one that already exists
 
-Renaming an operation, renaming or reordering a constructor parameter, or giving an argument a new meaning breaks every file that already uses it. That is a major bump of the vendor protocol, and the release that does it registers a rewrite so that the files users already have go on loading. The one exception is 0.3, which gave `play`'s `dwell` and `delay` and `set_trigger`'s `duration` new units in a minor release with no rewrite, because the package had no users yet.
+Renaming an operation, renaming or reordering a constructor parameter, or giving an argument a new meaning breaks every file that already uses it. That is a major bump of the vendor protocol, and the release that does it registers a rewrite so that the files users already have go on loading. The exceptions are 0.3, which gave `play`'s `dwell` and `delay` and `set_trigger`'s `duration` new units in a minor release with no rewrite, because the package had no users yet, and 0.4, which made `play`'s `repetitions` default to `None` where it had been `1`, also with no rewrite.
 
 Say 1.0 makes `dwell` required on `qdac.play`, where it had been optional with a default of `2`. A file written against 0.3 leaves it out, so the parser would hand `Play.__init__` one argument short:
 
