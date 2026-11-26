@@ -34,6 +34,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d  # v10.0.1
         with:
+          version: "0.13.8"
           enable-cache: true
           cache-dependency-glob: |
             **/pyproject.toml
@@ -44,7 +45,7 @@ jobs:
       # project itself has to be installed, not just the docs tooling.
       - name: Install the project and the docs tooling
         run: |
-          uv sync --frozen --group docs
+          uv sync --locked --no-build --group docs
           echo "VIRTUAL_ENV=$PWD/.venv" >> "$GITHUB_ENV"
           echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
 
